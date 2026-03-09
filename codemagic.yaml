@@ -13,9 +13,13 @@ workflows:
     triggering:
       events:
         - push
-    when:
-      branch: main
     scripts:
+      - name: Check branch
+        script: |
+          if [ "$CM_BRANCH" != "main" ]; then
+            echo "Not on main branch ($CM_BRANCH), skipping build."
+            exit 0
+          fi
       - name: Install dependencies
         script: npm install
       - name: Build web project
