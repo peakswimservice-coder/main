@@ -13,9 +13,8 @@ workflows:
     triggering:
       events:
         - push
-      branch_filter:
-        include:
-          - main
+    when:
+      branch: main
     scripts:
       - name: Install dependencies
         script: npm install
