@@ -34,8 +34,10 @@ workflows:
           npx cap sync ios
       - name: Build iOS project
         script: |
-          # Questa parte richiede che la cartella 'ios' sia stata generata e pushata, 
-          # oppure generata qui con 'npx cap add ios'
+          # NOTA: Per generare il file .ipa è necessario configurare i certificati Apple 
+          # in Codemagic (Settings > iOS Code Signing). 
+          # Se ricevi l'errore 'export_options.plist does not exist', significa che 
+          # i certificati non sono ancora stati caricati o collegati correttamente.
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
             --scheme "App"
