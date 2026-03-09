@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, MapPin, ExternalLink, Trophy, Plus, Clock, Users } from 'lucide-react';
 
 const events = [

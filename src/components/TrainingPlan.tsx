@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Plus, Trash2, TrendingUp, Activity, BarChart3, ChevronDown, Check, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Save, Share2, Plus, Trash2, TrendingUp, Activity, BarChart3, ChevronDown, Check, Settings } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { it } from 'date-fns/locale/it';
@@ -35,6 +35,8 @@ export default function TrainingPlan() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Analytics State
   const [movingAverageData, setMovingAverageData] = useState<any[]>(paces.map(p => ({ name: p.id, km: 0 })));
@@ -97,6 +99,7 @@ export default function TrainingPlan() {
         setSessionId(null);
         setBlocks([{ id: crypto.randomUUID(), title: 'Riscaldamento', sets: [], copyToAll: false }]);
       }
+      setIsDirty(false);
     }
 
     loadSession();
@@ -212,6 +215,7 @@ export default function TrainingPlan() {
       }
 
       setSaveSuccess(true);
+      setIsDirty(false);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (e) {
       console.error("Save Error: ", e);
@@ -223,7 +227,7 @@ export default function TrainingPlan() {
 
   // 4. Fetch Analytics
   useEffect(() => {
-    if (!activeGroup) return;
+      if (!activeGroup) return;
 
     async function loadAnalytics() {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -273,9 +277,9 @@ export default function TrainingPlan() {
   }, 0);
 
   // Helper functions for UI interaction
-  const addBlock = () => setBlocks([...blocks, { id: crypto.randomUUID(), title: 'Nuovo Blocco', sets: [], copyToAll: false }]);
-  const removeBlock = (blockId: string) => setBlocks(blocks.filter(b => b.id !== blockId));
-  const updateBlockTitle = (blockId: string, title: string) => setBlocks(blocks.map(b => b.id === blockId ? { ...b, title } : b));
+  const addBlock = () => { setBlocks([...blocks, { id: crypto.randomUUID(), title: 'Nuovo Blocco', sets: [], copyToAll: false }]); setIsDirty(true); };
+  const removeBlock = (blockId: string) => { setBlocks(blocks.filter(b => b.id !== blockId)); setIsDirty(true); };
+  const updateBlockTitle = (blockId: string, title: string) => { setBlocks(blocks.map(b => b.id === blockId ? { ...b, title } : b)); setIsDirty(true); };
   
   const addSet = (blockId: string) => {
     setBlocks(blocks.map(b => {
@@ -284,6 +288,7 @@ export default function TrainingPlan() {
       }
       return b;
     }));
+    setIsDirty(true);
   };
   
   const updateSet = (blockId: string, setId: string, field: string, value: any) => {
@@ -293,6 +298,7 @@ export default function TrainingPlan() {
       }
       return b;
     }));
+    setIsDirty(true);
   };
 
   const removeSet = (blockId: string, setId: string) => {
@@ -302,6 +308,153 @@ export default function TrainingPlan() {
       }
       return b;
     }));
+    setIsDirty(true);
+  };
+
+  const handleSharePdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+       const { jsPDF } = await import('jspdf');
+
+       const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+       
+       const margin = 20;
+       const pageWidth = doc.internal.pageSize.getWidth();
+       const pageHeight = doc.internal.pageSize.getHeight();
+       let y = margin;
+       
+       const addText = (text: string, x: number, yPos: number, options: any = {}) => {
+          doc.text(text, x, yPos, options);
+       };
+
+       const checkPageBreak = (neededHeight: number) => {
+         if (y + neededHeight > pageHeight - margin) {
+           doc.addPage();
+           y = margin;
+         }
+       };
+
+       // HEADER
+       doc.setFont('helvetica', 'bold');
+       doc.setFontSize(22);
+       doc.setTextColor(30, 58, 138); // blue-900 approx
+       addText('PeakSwim', margin, y);
+       
+       doc.setFont('helvetica', 'normal');
+       doc.setFontSize(14);
+       doc.setTextColor(100, 116, 139); // slate-500
+       y += 8;
+       addText('Programma di Allenamento', margin, y);
+       y += 15;
+       
+       // SUBHEADER INFO
+       const dateDisplay = format(selectedDate, "EEEE, d MMMM yyyy", { locale: it });
+       // Capitalize first letter of day
+       const capitalizedDateDisplay = dateDisplay.charAt(0).toUpperCase() + dateDisplay.slice(1);
+       
+       doc.setFont('helvetica', 'bold');
+       doc.setFontSize(12);
+       doc.setTextColor(15, 23, 42); // slate-900
+       
+       doc.text(`Gruppo: ${activeGroup?.name || ''}`, margin, y);
+       doc.text(`Data: ${capitalizedDateDisplay}`, margin + 80, y);
+       y += 8;
+       doc.text(`Tipo: ${activeSessionType}`, margin, y);
+       doc.text(`Volume: ${(totalVolume / 1000).toFixed(1)} km`, margin + 80, y);
+       
+       y += 12;
+       doc.setDrawColor(226, 232, 240); // slate-200
+       doc.line(margin, y, pageWidth - margin, y);
+       y += 12;
+       
+       // BLOCKS
+       blocks.forEach((block) => {
+         checkPageBreak(25); // Need some space for block title
+         
+         doc.setFont('helvetica', 'bold');
+         doc.setFontSize(14);
+         doc.setTextColor(15, 23, 42); // slate-900
+         
+         // Block Title
+         doc.text(block.title || 'Blocco senza nome', margin, y);
+         
+         // Block Volume
+         const blockVol = block.sets.reduce((acc: number, s: any) => acc + (Number(s.reps) * Number(s.distance)), 0);
+         doc.setFont('helvetica', 'normal');
+         doc.setFontSize(10);
+         doc.setTextColor(100, 116, 139); // slate-500
+         doc.text(`Vol. ${blockVol}m`, pageWidth - margin, y, { align: 'right' });
+         
+         y += 10;
+         
+         // SETS
+         block.sets.forEach((set: any) => {
+           checkPageBreak(15);
+           
+           doc.setFont('helvetica', 'bold');
+           doc.setFontSize(11);
+           doc.setTextColor(51, 65, 85); // slate-700
+           
+           // Format distance string: N x Mm (or just Mm if N=1)
+           const reps = Number(set.reps) || 1;
+           const distStr = reps > 1 ? `${reps} x ${set.distance}m` : `${set.distance}m`;
+           
+           doc.text(distStr, margin + 5, y);
+           
+           // Format pace
+           const activePace = paces.find(p => p.id === set.pace) || paces[0];
+           doc.setFont('helvetica', 'italic');
+           doc.setFontSize(10);
+           doc.setTextColor(100, 116, 139); // slate-500
+           doc.text(activePace.id, pageWidth - margin, y, { align: 'right' });
+           
+           // Format description
+           doc.setFont('helvetica', 'normal');
+           doc.setTextColor(71, 85, 105); // slate-600
+           
+           const desc = set.description || '';
+           const splitDesc = doc.splitTextToSize(desc, 100);
+           doc.text(splitDesc, margin + 40, y);
+           
+           // Calculate description height if wrapped
+           const descHeight = splitDesc.length * 5;
+           
+           y += Math.max(8, descHeight + 3);
+         });
+         
+         y += 6; // Space after block
+       });
+
+       const dateFileStr = format(selectedDate, 'yyMMdd');
+       const filename = `Programma_${activeGroup?.name.replace(/\s+/g, '')}_${dateFileStr}.pdf`;
+       const pdfBlob = doc.output('blob');
+
+       // File for sharing
+       const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+       const canShare = navigator.canShare && navigator.canShare({ files: [file] });
+
+       if (canShare) {
+         await navigator.share({
+           title: 'Programma Allenamento',
+           files: [file],
+         });
+       } else {
+         // Fallback: download
+         const url = URL.createObjectURL(pdfBlob);
+         const a = document.createElement('a');
+         a.href = url;
+         a.download = filename;
+         document.body.appendChild(a);
+         a.click();
+         document.body.removeChild(a);
+         URL.revokeObjectURL(url);
+       }
+    } catch (e) {
+       console.error("PDF Share Error:", e);
+       alert("Errore durante la generazione o la condivisione del PDF.");
+    } finally {
+       setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -523,19 +676,29 @@ export default function TrainingPlan() {
                   Volume Previsto: <span className="text-blue-900 ml-1.5 font-black">{(totalVolume / 1000).toFixed(1)} km</span>
                 </span>
               </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+               <button
+                  onClick={handleSharePdf}
+                  disabled={isDirty || isGeneratingPdf || blocks.length === 0}
+                  className={`bg-white border text-slate-600 px-4 py-2.5 rounded-xl font-bold flex items-center justify-center transition-all flex-1 sm:flex-none ${isDirty || blocks.length === 0 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' : 'border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm active:translate-y-1'}`}
+                  title={isDirty ? "Salva prima di condividere" : "Condividi Programma in PDF"}
+               >
+                 {isGeneratingPdf ? "Gen..." : <><Share2 className="w-5 h-5 sm:mr-2" /> <span className="hidden sm:inline">Condividi</span></>}
+               </button>
+              
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className={`${saveSuccess ? 'bg-emerald-500 border-emerald-600' : 'bg-blue-600 border-blue-700'} text-white border-b-4 px-6 py-2.5 rounded-xl font-bold flex items-center justify-center hover:brightness-110 active:border-b-0 active:translate-y-1 transition-all flex-[2] sm:flex-none disabled:opacity-50`}
+              >
+                {saveSuccess ? <><Check className="w-5 h-5 mr-2" /> Salvato!</> : 
+                 isSaving    ? "Salvataggio..." : <><Save className="w-5 h-5 mr-2" /> Salva Sessione</>}
+              </button>
             </div>
-            
-            <button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`${saveSuccess ? 'bg-emerald-500 border-emerald-600' : 'bg-blue-600 border-blue-700'} text-white border-b-4 px-6 py-2.5 rounded-xl font-bold flex items-center justify-center hover:brightness-110 active:border-b-0 active:translate-y-1 transition-all w-full sm:w-auto disabled:opacity-50`}
-            >
-              {saveSuccess ? <><Check className="w-5 h-5 mr-2" /> Salvato!</> : 
-               isSaving    ? "Salvataggio..." : <><Save className="w-5 h-5 mr-2" /> Salva Sessione</>}
-            </button>
+            </div>
           </div>
 
-          <div className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-6 bg-slate-50/30">
+          <div id="pdf-content" className="p-4 sm:p-6 flex-1 overflow-y-auto space-y-6 bg-slate-50/30">
             {blocks.map((block) => (
               <div key={block.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-300">
                 <div className="bg-slate-50 px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-slate-200">
@@ -546,15 +709,18 @@ export default function TrainingPlan() {
                       onChange={(e) => updateBlockTitle(block.id, e.target.value)}
                       className="font-bold text-slate-800 text-sm bg-transparent outline-none focus:bg-white px-2 py-1 rounded transition border border-transparent focus:border-slate-300 w-full sm:w-auto min-w-[150px]"
                     />
-                    <label className="flex items-center gap-2 cursor-pointer bg-white px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors w-max">
-                      <input 
-                        type="checkbox" 
-                        checked={block.copyToAll || false}
-                        onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? { ...b, copyToAll: e.target.checked } : b))}
-                        className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 pointer-events-none"
-                      />
-                      <span className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors tracking-tight">Riporta su altri allenamenti</span>
-                    </label>
+                      <label className="flex items-center gap-2 cursor-pointer bg-white px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors w-max pdf-ignore">
+                        <input 
+                          type="checkbox" 
+                          checked={block.copyToAll || false}
+                          onChange={(e) => {
+                             setBlocks(blocks.map(b => b.id === block.id ? { ...b, copyToAll: e.target.checked } : b));
+                             setIsDirty(true);
+                          }}
+                          className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 pointer-events-none"
+                        />
+                        <span className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors tracking-tight">Riporta su altri allenamenti</span>
+                      </label>
                   </div>
                   
                   <div className="flex items-center space-x-2 self-end sm:self-auto">

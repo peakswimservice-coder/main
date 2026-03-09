@@ -1,7 +1,7 @@
-import React from 'react';
 import { Users, Activity, AlertCircle, ArrowRight, CheckCircle2, Droplets } from 'lucide-react';
+import type { ViewType } from '../App';
 
-export default function Dashboard({ setCurrentView }: { setCurrentView: (v: string) => void }) {
+export default function Dashboard({ setCurrentView }: { setCurrentView: (v: ViewType) => void }) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-500">
       <header className="mb-8">

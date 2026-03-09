@@ -1,0 +1,98 @@
+﻿[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mÔ£ô[39m 31 modules transformed.
+npx : [31mx[39m 
+Build failed in 1.80s
+In riga:1 car:1
++ npx vite build > 
+vite_build_output.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mx[39m B   
+ uild failed in 1.8    
+0s:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31merror during 
+build:
+[31m[vite]: Rollup 
+failed to resolve 
+import "dompurify" 
+from "C:/Users/fnico/my
+_first_app/coach-app-fr
+ontend/node_modules/jsp
+df/dist/jspdf.es.min.js
+".
+This is most likely 
+unintended because it 
+can break your 
+application at runtime.
+If you do want to 
+externalize this 
+module explicitly add 
+it to
+`build.rollupOptions.ex
+ternal`[31m
+    at viteWarn (file:/
+//C:/Users/fnico/my_fir
+st_app/coach-app-fronte
+nd/node_modules/vite/di
+st/node/chunks/dep-BK3b
+2jBa.js:65855:17)
+    at onwarn (file:///
+C:/Users/fnico/my_first
+_app/coach-app-frontend
+/node_modules/@vitejs/p
+lugin-react/dist/index.
+js:90:7)
+    at onRollupWarning 
+(file:///C:/Users/fnico
+/my_first_app/coach-app
+-frontend/node_modules/
+vite/dist/node/chunks/d
+ep-BK3b2jBa.js:65885:5)
+    at onwarn (file:///
+C:/Users/fnico/my_first
+_app/coach-app-frontend
+/node_modules/vite/dist
+/node/chunks/dep-BK3b2j
+Ba.js:65550:7)
+    at file:///C:/Users
+/fnico/my_first_app/coa
+ch-app-frontend/node_mo
+dules/rollup/dist/es/sh
+ared/node-entry.js:2099
+5:13
+    at Object.logger 
+[as onLog] (file:///C:/
+Users/fnico/my_first_ap
+p/coach-app-frontend/no
+de_modules/rollup/dist/
+es/shared/node-entry.js
+:22968:9)
+    at ModuleLoader.han
+dleInvalidResolvedId (f
+ile:///C:/Users/fnico/m
+y_first_app/coach-app-f
+rontend/node_modules/ro
+llup/dist/es/shared/nod
+e-entry.js:21712:26)
+    at ModuleLoader.res
+olveDynamicImport (file
+:///C:/Users/fnico/my_f
+irst_app/coach-app-fron
+tend/node_modules/rollu
+p/dist/es/shared/node-e
+ntry.js:21770:58)
+    at async file:///C:
+/Users/fnico/my_first_a
+pp/coach-app-frontend/n
+ode_modules/rollup/dist
+/es/shared/node-entry.j
+s:21654:32[39m

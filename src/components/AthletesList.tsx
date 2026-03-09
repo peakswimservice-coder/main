@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, Filter, MoreVertical, Plus, UserPlus, Check, X } from 'lucide-react';
 
 const athletes = [

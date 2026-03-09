@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Send, Users, AlertCircle, Edit3, Clock, CheckCircle2 } from 'lucide-react';
 
 const mockMessages = [

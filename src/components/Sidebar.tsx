@@ -1,4 +1,3 @@
-import React from 'react';
 import { Home, Users, Activity, Calendar, LifeBuoy, MessageCircle } from 'lucide-react';
 
 interface SidebarProps {
