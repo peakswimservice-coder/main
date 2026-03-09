@@ -21,9 +21,11 @@ workflows:
             exit 0
           fi
       - name: Install dependencies
-        script: npm install
+        script: npm ci
       - name: Build web project
-        script: npm run build
+        script: |
+          chmod +x node_modules/.bin/*
+          npm run build
       - name: Capacitor Sync
         script: |
           if [ ! -d "ios" ]; then
