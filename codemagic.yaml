@@ -13,8 +13,9 @@ workflows:
     triggering:
       events:
         - push
-      branches:
-        - main
+      branch_filter:
+        include:
+          - main
     scripts:
       - name: Install dependencies
         script: npm install
@@ -22,6 +23,9 @@ workflows:
         script: npm run build
       - name: Capacitor Sync
         script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
           npx cap sync ios
       - name: Build iOS project
         script: |
