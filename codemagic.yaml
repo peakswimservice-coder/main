@@ -21,7 +21,7 @@ workflows:
             exit 0
           fi
       - name: Install dependencies
-        script: npm ci
+        script: npm install
       - name: Build web project
         script: |
           chmod +x node_modules/.bin/*
