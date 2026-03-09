@@ -32,12 +32,24 @@ workflows:
             npx cap add ios
           fi
           npx cap sync ios
-      - name: Build iOS project
+      - name: Verify iOS Compilation (No Signing)
         script: |
-          # NOTA: Per generare il file .ipa è necessario configurare i certificati Apple 
+          # Questo comando verifica che il codice sia corretto e compili su iOS, 
+          # ma non richiede i certificati Apple. OTTIMO per i test iniziali!
+          xcodebuild build \
+            -workspace "ios/App/App.xcworkspace" \
+            -scheme "App" \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE=""
+
+      - name: Build Production IPA (Requires Code Signing)
+        script: |
+          # ATTENZIONE: Questo comando fallirà finché non configuri i certificati 
           # in Codemagic (Settings > iOS Code Signing). 
-          # Se ricevi l'errore 'export_options.plist does not exist', significa che 
-          # i certificati non sono ancora stati caricati o collegati correttamente.
+          # Se non li hai ancora, puoi ignorare l'errore in questo step per ora.
           xcode-project build-ipa \
             --workspace "ios/App/App.xcworkspace" \
             --scheme "App"
