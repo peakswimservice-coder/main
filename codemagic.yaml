@@ -32,27 +32,33 @@ workflows:
             npx cap add ios
           fi
           npx cap sync ios
-      - name: Verify iOS Compilation (No Signing)
+      - name: Generate Unsigned IPA for Sideloading
         script: |
-          # Questo comando verifica che il codice sia corretto e compili su iOS, 
-          # ma non richiede i certificati Apple. OTTIMO per i test iniziali!
+          # 1. Compila l'app senza firma
           xcodebuild build \
             -workspace "ios/App/App.xcworkspace" \
             -scheme "App" \
             -sdk iphoneos \
+            -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE=""
+            PROVISIONING_PROFILE="" \
+            clean build
 
-      - name: Build Production IPA (Requires Code Signing)
-        script: |
-          # ATTENZIONE: Questo comando fallirà finché non configuri i certificati 
-          # in Codemagic (Settings > iOS Code Signing). 
-          # Se non li hai ancora, puoi ignorare l'errore in questo step per ora.
-          xcode-project build-ipa \
-            --workspace "ios/App/App.xcworkspace" \
-            --scheme "App"
+          # 2. Crea il pacchetto .ipa manualmente (Payload folder)
+          # Cerchiamo dove Xcode ha messo il file .app (di solito in DerivedData)
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "App.app" -type d | head -n 1)
+          if [ -d "$APP_PATH" ]; then
+            mkdir -p build/ios/ipa/Payload
+            cp -r "$APP_PATH" build/ios/ipa/Payload/
+            cd build/ios/ipa
+            zip -qr PeakSwim-unsigned.ipa Payload
+            echo "IPA non firmato generato con successo!"
+          else
+            echo "Errore: Non ho trovato il file App.app compilato."
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
