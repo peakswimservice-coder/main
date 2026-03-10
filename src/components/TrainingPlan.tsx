@@ -458,25 +458,26 @@ export default function TrainingPlan() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 lg:pb-0">
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto pb-24 lg:pb-8">
+      
+      {/* Date Header */}
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center">
-            <Activity className="w-8 h-8 mr-3 text-blue-600 bg-blue-100 p-1.5 rounded-xl" />
-            Training Builder
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center">
+            Training <span className="text-blue-600 ml-2">Builder</span>
           </h1>
-          <p className="text-slate-500 mt-1 pl-11">Pianifica le sessioni supportato dai dati di carico.</p>
+          <p className="text-slate-500 text-sm font-medium mt-1 uppercase tracking-wider">Gestione Piani di Allenamento</p>
         </div>
-        
-        <div className="flex items-center space-x-2 bg-white border border-slate-200 rounded-xl p-1 shadow-sm w-full sm:w-auto overflow-hidden">
+
+        <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner w-full sm:w-auto">
           <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 hover:bg-slate-50 rounded-lg text-slate-600 transition shrink-0"><ChevronLeft className="w-5 h-5" /></button>
           
-          <div className="flex-1 flex items-center justify-center space-x-2 px-1 py-1 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition min-w-[200px] relative">
-             <DatePicker 
-                selected={selectedDate} 
-                onChange={(date: Date | null) => date && setSelectedDate(date)} 
+          <div className="relative flex-1 sm:w-48 px-2 flex items-center justify-center">
+             <DatePicker
+                selected={selectedDate}
+                onChange={(date: Date | null) => date && setSelectedDate(date)}
+                dateFormat="eeee dd MMMM"
                 locale="it"
-                dateFormat="EEE, d MMMM ''yy"
                 className="bg-transparent font-bold text-slate-800 text-sm text-center w-full outline-none cursor-pointer"
              />
              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
@@ -486,8 +487,8 @@ export default function TrainingPlan() {
         </div>
       </header>
 
-      {/* Selettore Gruppi - Ora in alto e orizzontale su mobile */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0 mb-6">
+      {/* Group Selector - Top Banner */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
         <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <h3 className="font-bold text-slate-800 text-sm">Gruppi</h3>
           <button 
@@ -559,162 +560,8 @@ export default function TrainingPlan() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
-             <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800">Gruppi</h3>
-              <button 
-                onClick={() => setIsEditingGroups(!isEditingGroups)}
-                className={`p-1.5 rounded-lg transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100'}`}
-                title="Gestisci Gruppi"
-              >
-                {isEditingGroups ? <Check className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
-              </button>
-            </div>
-            <div className={`p-2 flex gap-2 no-scrollbar ${isEditingGroups ? 'flex-col' : 'xl:flex-col overflow-x-auto xl:overflow-x-visible'}`}>
-              {groups.map((group) => {
-                const isActive = activeGroup?.id === group.id && !isEditingGroups;
-                return (
-                  <div key={group.id} className="relative group/btn">
-                    {isEditingGroups ? (
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="text" 
-                          defaultValue={group.name}
-                          onBlur={async (e) => {
-                             if (e.target.value !== group.name && e.target.value.trim() !== '') {
-                               const {error} = await supabase.from('groups').update({name: e.target.value}).eq('id', group.id);
-                               if(!error) { fetchGroups(); if(activeGroup?.id === group.id) setActiveGroup({...activeGroup, name: e.target.value}); }
-                             }
-                          }}
-                          className="w-full px-2 py-1.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                        />
-                        <button 
-                          onClick={async () => {
-                             const {error} = await supabase.from('groups').delete().eq('id', group.id);
-                             if(error) alert("Impossibile eliminare: ci sono allenamenti associati a questo gruppo.");
-                             else fetchGroups();
-                          }}
-                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => setActiveGroup(group)}
-                        className={`w-full min-w-[100px] xl:min-w-0 xl:w-full text-left p-2 xl:p-3 rounded-xl transition shrink-0 border relative ${
-                          isActive 
-                          ? 'bg-blue-50 border-blue-200 shadow-sm' 
-                          : 'bg-white border-transparent hover:bg-slate-50 border-slate-100'
-                        }`}
-                      >
-                        <span className={`block font-bold text-xs xl:text-sm ${isActive ? 'text-blue-800' : 'text-slate-700'}`}>{group.name}</span>
-                        {isActive && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500"></div>}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-              
-              {isEditingGroups && (
-                <button
-                  onClick={async () => {
-                    const {error} = await supabase.from('groups').insert({name: 'Nuovo Gruppo'});
-                    if(!error) fetchGroups();
-                  }}
-                  className="w-full mt-2 py-2 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-bold hover:bg-slate-50 hover:text-blue-600 transition flex items-center justify-center"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Aggiungi Gruppo
-                </button>
-              )}
-            </div>
-        {/* Colonna Analytics - Spostata in fondo/lato e resa più compatta */}
-        <div className="xl:col-span-1 space-y-6 flex flex-col xl:order-last">
-
-          {/* Analytics Panel */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 shadow-blue-900/5">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 flex items-center text-sm"><BarChart3 className="w-4 h-4 mr-2 text-blue-500"/> Analisi ({activeSessionType})</h3>
-            </div>
-            <div className="p-5 space-y-6">
-               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <span className="text-xs font-bold text-slate-500 block mb-1">Vol. Sessione</span>
-                  <div className="flex items-end justify-between"><span className="text-xl font-black text-slate-800">{(totalVolume / 1000).toFixed(1)} <span className="text-sm text-slate-500 font-bold">km</span></span></div>
-                </div>
-                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                  <span className="text-xs font-bold text-blue-600 block mb-1">Km {format(selectedDate, 'EEEE', {locale: it})} St.</span>
-                  <div className="flex items-end justify-between"><span className="text-xl font-black text-blue-900">{movingAverageData.reduce((acc, curr) => acc + curr.km, 0).toFixed(1)}</span></div>
-                </div>
-              </div>
-
-              {/* Chart 1: Moving Average by Pace */}
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Media ultimi {format(selectedDate, 'EEEE', {locale: it})}</h4>
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">Per Andatura</span>
-                </div>
-                <div className="h-40 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={movingAverageData} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{fontSize: 10, fill: '#64748b', fontWeight: 600}} axisLine={false} tickLine={false} />
-                      <YAxis tick={{fontSize: 10, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        cursor={{fill: '#f8fafc'}}
-                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold'}}
-                        formatter={(value: any) => [`${value} km`, 'Volume']}
-                      />
-                      <Bar dataKey="km" radius={[4, 4, 0, 0]}>
-                        {movingAverageData.map((entry, index) => {
-                          const paceColor = paces.find(p => p.id === entry.name)?.color || '#cbd5e1';
-                          return <Cell key={`cell-${index}`} fill={paceColor} />;
-                        })}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Chart 2: Weekly Distribution */}
-              <div className="pt-4 border-t border-slate-100 mt-6">
-                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Distribuzione in Sett.</h4>
-                <div className="flex items-center">
-                  <div className="w-20 h-20 shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={weeklyDistributionData}
-                          innerRadius={25}
-                          outerRadius={35}
-                          paddingAngle={2}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {weeklyDistributionData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1 pl-4 space-y-2">
-                    {weeklyDistributionData.map(item => (
-                      <div key={item.name} className="flex items-center justify-between text-xs font-bold">
-                        <div className="flex items-center">
-                          <div className="w-2 h-2 rounded-full mr-2" style={{backgroundColor: item.color}}></div>
-                          <span className="text-slate-600 truncate">{item.name}</span>
-                        </div>
-                        <span className="text-slate-900 ml-2">{item.name === 'Nessun Dato' ? '-' : `${item.value} m`}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Colonna Builder Interattivo - PRIORITÀ ALTA */}
+        
+        {/* Main Builder Column - FIRST in Mobile/Grid Order */}
         <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col xl:order-first lg:min-h-[700px]">
           
           <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50/50 rounded-t-2xl">
@@ -723,7 +570,6 @@ export default function TrainingPlan() {
                 Programma <span className="text-blue-600 ml-2 bg-blue-100 px-3 py-1 rounded-lg text-lg hidden sm:inline-block">{activeGroup?.name}</span>
               </h2>
               
-              {/* Type Tabs */}
               <div className="flex bg-slate-200/50 p-1 rounded-xl w-fit mt-3">
                  {sessionTypes.map(type => (
                    <button 
@@ -744,6 +590,8 @@ export default function TrainingPlan() {
                   Volume Previsto: <span className="text-blue-900 ml-1.5 font-black">{(totalVolume / 1000).toFixed(1)} km</span>
                 </span>
               </div>
+            </div>
+
             <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
                <button
                   onClick={handleSharePdf}
@@ -762,7 +610,6 @@ export default function TrainingPlan() {
                 {saveSuccess ? <><Check className="w-5 h-5 mr-2" /> Salvato!</> : 
                  isSaving    ? "Salvataggio..." : <><Save className="w-5 h-5 mr-2" /> Salva Sessione</>}
               </button>
-            </div>
             </div>
           </div>
 
@@ -869,6 +716,90 @@ export default function TrainingPlan() {
             </button>
           </div>
         </div>
+
+        {/* Analytics Column - LAST in Desktop/Grid Order */}
+        <div className="xl:col-span-1 space-y-6 flex flex-col xl:order-last">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 shadow-blue-900/5">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 flex items-center text-sm"><BarChart3 className="w-4 h-4 mr-2 text-blue-500"/> Analisi ({activeSessionType})</h3>
+            </div>
+            <div className="p-5 space-y-6">
+               <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-xs font-bold text-slate-500 block mb-1">Vol. Sessione</span>
+                  <div className="flex items-end justify-between"><span className="text-xl font-black text-slate-800">{(totalVolume / 1000).toFixed(1)} <span className="text-sm text-slate-500 font-bold">km</span></span></div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                  <span className="text-xs font-bold text-blue-600 block mb-1">Km {format(selectedDate, 'EEEE', {locale: it})} St.</span>
+                  <div className="flex items-end justify-between"><span className="text-xl font-black text-blue-900">{movingAverageData.reduce((acc, curr) => acc + curr.km, 0).toFixed(1)}</span></div>
+                </div>
+              </div>
+
+              {/* Chart 1: Moving Average by Pace */}
+              <div className="mt-2">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Media storica {format(selectedDate, 'EEEE', {locale: it})}</h4>
+                </div>
+                <div className="h-32 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={movingAverageData} margin={{ top: 5, right: 0, left: -30, bottom: 0 }}>
+                      <XAxis dataKey="name" tick={{fontSize: 9, fill: '#64748b', fontWeight: 600}} axisLine={false} tickLine={false} />
+                      <YAxis tick={{fontSize: 9, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        cursor={{fill: '#f8fafc'}}
+                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold'}}
+                        formatter={(value: any) => [`${value} km`, 'Volume']}
+                      />
+                      <Bar dataKey="km" radius={[3, 3, 0, 0]}>
+                        {movingAverageData.map((entry, index) => {
+                          const paceColor = paces.find(p => p.id === entry.name)?.color || '#cbd5e1';
+                          return <Cell key={`cell-${index}`} fill={paceColor} />;
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 2: Weekly Distribution */}
+              <div className="pt-4 border-t border-slate-100 mt-4">
+                <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Distribuzione Settimanale</h4>
+                <div className="flex items-center">
+                  <div className="w-16 h-16 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={weeklyDistributionData}
+                          innerRadius={18}
+                          outerRadius={28}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {weeklyDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 pl-3 space-y-1">
+                    {weeklyDistributionData.slice(0, 3).map(item => (
+                      <div key={item.name} className="flex items-center justify-between text-[10px] font-bold">
+                        <div className="flex items-center truncate">
+                          <div className="w-1.5 h-1.5 rounded-full mr-1.5 shrink-0" style={{backgroundColor: item.color}}></div>
+                          <span className="text-slate-600 truncate">{item.name}</span>
+                        </div>
+                        <span className="text-slate-900 ml-1">{item.name === 'Nessun Dato' ? '-' : `${(item.value / 1000).toFixed(1)}k`}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
