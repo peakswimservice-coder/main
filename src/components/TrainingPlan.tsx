@@ -235,9 +235,9 @@ export default function TrainingPlan() {
     setIsSendingNotification(true);
     
     try {
-      // Configuriamo l'invio tramite OneSignal REST API
-      const ONESIGNAL_APP_ID = "d3c0042e-c767-491d-882e-0ebfc879276c";
-      const ONESIGNAL_REST_API_KEY = "os_v2_app_2paailwhm5er3cbob274q6jhnrzwymnc4slu6k4osxuciza47gbtywg72y5ldwnss5orr7y3uqfwkcuwrw7h5vdsukmgdzekjbyr6hq";
+      // Recuperiamo le credenziali dalle variabili d'ambiente (Vite)
+      const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID;
+      const ONESIGNAL_REST_API_KEY = import.meta.env.VITE_ONESIGNAL_REST_API_KEY;
 
       const response = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",

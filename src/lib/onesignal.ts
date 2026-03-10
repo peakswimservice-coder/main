@@ -1,8 +1,8 @@
 import OneSignal from 'react-onesignal';
 import { supabase } from '../supabaseClient';
 
-// L'App ID verrà inserito non appena l'utente lo fornisce
-const ONESIGNAL_APP_ID = "d3c0042e-c767-491d-882e-0ebfc879276c"; 
+// L'App ID viene ora recuperato dalle variabili d'ambiente
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID; 
 
 export const initializeOneSignal = async (userId: string) => {
   try {
