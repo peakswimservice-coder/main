@@ -237,7 +237,7 @@ export default function TrainingPlan() {
     try {
       // Configuriamo l'invio tramite OneSignal REST API
       const ONESIGNAL_APP_ID = "d3c0042e-c767-491d-882e-0ebfc879276c";
-      const ONESIGNAL_REST_API_KEY = "os_v2_app_2paailwhm5er3cbob274q6jhntakfeg75vsu6efh4towkam62vnmy24cmrtothwj7olzruhudfjnto5ngak7tv3cpcjxrpu7jua6mtq";
+      const ONESIGNAL_REST_API_KEY = "os_v2_app_2paailwhm5er3cbob274q6jhnrgpc6ufwhresnumutphvtlxf25q6ivgjczg5igrcfn46lgktn6t6ocjmmauhfewfmnhmj4fhrinnaq";
 
       const response = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",
