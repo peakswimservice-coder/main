@@ -7,22 +7,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { groupId, groupName, sessionType, date } = req.body;
 
-  const ONESIGNAL_APP_ID = process.env.VITE_ONESIGNAL_APP_ID?.trim();
-  const ONESIGNAL_REST_API_KEY = process.env.VITE_ONESIGNAL_REST_API_KEY?.trim();
+  const ONESIGNAL_APP_ID = (process.env.VITE_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID)?.trim();
+  const ONESIGNAL_REST_API_KEY = (process.env.VITE_ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_REST_API_KEY)?.trim();
 
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
-    return res.status(500).json({ error: 'Configurazione OneSignal mancante sull\'ambiente' });
+    console.error("Missing credentials:", { appId: !!ONESIGNAL_APP_ID, apiKey: !!ONESIGNAL_REST_API_KEY });
+    return res.status(500).json({ error: 'Configurazione OneSignal mancante sull\'ambiente (VITE_ONESIGNAL_APP_ID / VITE_ONESIGNAL_REST_API_KEY)' });
   }
-
-  // Debug (rimuovere in produzione se necessario)
-  console.log(`Sending to OneSignal with AppId: ${ONESIGNAL_APP_ID.substring(0, 8)}...`);
 
   try {
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Authorization": `Basic ${ONESIGNAL_REST_API_KEY}`
+        "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`
       },
       body: JSON.stringify({
         app_id: ONESIGNAL_APP_ID,
