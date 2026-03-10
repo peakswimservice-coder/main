@@ -503,7 +503,7 @@ export default function TrainingPlan() {
                 {isEditingGroups ? <Check className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
               </button>
             </div>
-            <div className="p-2 flex xl:flex-col gap-2 overflow-x-auto xl:overflow-x-visible no-scrollbar">
+            <div className={`p-2 flex gap-2 no-scrollbar ${isEditingGroups ? 'flex-col' : 'xl:flex-col overflow-x-auto xl:overflow-x-visible'}`}>
               {groups.map((group) => {
                 const isActive = activeGroup?.id === group.id && !isEditingGroups;
                 return (
