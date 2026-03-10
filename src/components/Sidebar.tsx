@@ -11,11 +11,11 @@ interface SidebarProps {
 
 export default function Sidebar({ currentView, setCurrentView, userEmail, userRole }: SidebarProps) {
   const allNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach'] },
-    { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'] },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach'], isMock: true },
+    { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'], isMock: true },
     { id: 'training', label: 'Allenamenti', icon: Activity, roles: ['coach'] },
-    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach'] },
-    { id: 'messages', label: 'Bacheca', icon: MessageSquare, roles: ['coach'] },
+    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach'], isMock: true },
+    { id: 'messages', label: 'Bacheca', icon: MessageSquare, roles: ['coach'], isMock: true },
     { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { id: 'company_management', label: 'Società', icon: Settings, roles: ['company_manager'] },
   ];
@@ -50,7 +50,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
+                <span className={item.isMock ? 'line-through opacity-60' : ''}>{item.label}</span>
               </button>
             );
           })}
@@ -94,7 +94,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                 <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
                   <Icon className={`w-6 h-6 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
                 </div>
-                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''}`}>
+                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''} ${item.isMock ? 'line-through opacity-60' : ''}`}>
                   {item.label.split(' ')[0]}
                 </span>
               </button>
