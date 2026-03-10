@@ -232,10 +232,11 @@ export default function TrainingPlan() {
 
   const handleSendNotifications = async () => {
     if (!activeGroup) return;
+    const APP_VERSION = "1.0.5-debug"; // Incrementiamo la versione per verifica
     setIsSendingNotification(true);
     
     try {
-      // Chiamiamo la nostra Serverless Function su Vercel (più sicuro e senza CORS)
+      // Chiamiamo la nostra Serverless Function su Vercel
       const response = await fetch("/api/notify", {
         method: "POST",
         headers: {
@@ -257,7 +258,7 @@ export default function TrainingPlan() {
       alert("Notifiche inviate con successo agli atleti!");
     } catch (err: any) {
       console.error("Errore invio notifiche:", err);
-      alert(err.message || "Errore nell'invio delle notifiche tramite OneSignal. Verifica la connessione e le chiavi.");
+      alert(`[v${APP_VERSION}] Errore: ${err.message || "Verifica la connessione e le chiavi."}`);
     } finally {
       setIsSendingNotification(false);
     }

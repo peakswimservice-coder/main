@@ -36,22 +36,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Authorization': `Key ${ONESIGNAL_REST_API_KEY}`,
+      'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`,
       'Content-Length': Buffer.byteLength(postData)
     }
   };
+
+  const API_VERSION = "1.0.5-api";
 
   return new Promise((resolve) => {
     const osReq = https.request(options, (osRes) => {
       let body = '';
       osRes.on('data', (chunk) => { body += chunk; });
       osRes.on('end', () => {
-        const result = JSON.parse(body || '{}');
+        let result = {};
+        try { result = JSON.parse(body || '{}'); } catch(e) {}
+        
+        // Aggiungiamo metadati di debug nel risultato
+        const enhancedResult = { ...result, _api_version: API_VERSION, _status: osRes.statusCode };
+
         if (osRes.statusCode && osRes.statusCode >= 200 && osRes.statusCode < 300) {
-          res.status(200).json(result);
+          res.status(200).json(enhancedResult);
         } else {
           console.error(`OneSignal Error ${osRes.statusCode}:`, body);
-          res.status(osRes.statusCode || 500).json(result);
+          res.status(osRes.statusCode || 500).json(enhancedResult);
         }
         resolve(true);
       });
