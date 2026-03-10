@@ -235,47 +235,26 @@ export default function TrainingPlan() {
     setIsSendingNotification(true);
     
     try {
-      // Recuperiamo le credenziali dalle variabili d'ambiente (Vite)
-      const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID;
-      const ONESIGNAL_REST_API_KEY = import.meta.env.VITE_ONESIGNAL_REST_API_KEY;
-
-      if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
-        console.error("Variabili OneSignal mancanti:", { appId: !!ONESIGNAL_APP_ID, apiKey: !!ONESIGNAL_REST_API_KEY });
-        throw new Error("Configurazione OneSignal mancante. Assicurati di aver aggiunto le variabili d'ambiente su Vercel.");
-      }
-
-      const response = await fetch("https://onesignal.com/api/v1/notifications", {
+      // Chiamiamo la nostra Serverless Function su Vercel (più sicuro e senza CORS)
+      const response = await fetch("/api/notify", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          included_segments: ["All"], // Per ora inviamo a tutti come richiesto
-          contents: { 
-            it: `Nuovo allenamento per il gruppo ${activeGroup.name}!`,
-            en: `New training for group ${activeGroup.name}!` 
-          },
-          headings: { 
-            it: "PeakSwim: Nuovo Allenamento",
-            en: "PeakSwim: New Training" 
-          },
-          data: { 
-            groupId: activeGroup.id,
-            date: format(selectedDate, 'yyyy-MM-dd')
-          }
+          groupId: activeGroup.id,
+          groupName: activeGroup.name,
+          date: format(selectedDate, 'yyyy-MM-dd')
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("OneSignal Error Details:", errorData);
-        throw new Error(errorData.errors?.[0] || "Errore durante l'invio via OneSignal");
+        throw new Error(errorData.error || errorData.errors?.[0] || "Errore durante l'invio via OneSignal");
       }
 
       setShowNotifyModal(false);
-      alert("Notifiche inviate con successo agli atleti tramite OneSignal!");
+      alert("Notifiche inviate con successo agli atleti!");
     } catch (err: any) {
       console.error("Errore invio notifiche:", err);
       alert(err.message || "Errore nell'invio delle notifiche tramite OneSignal. Verifica la connessione e le chiavi.");
