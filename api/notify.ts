@@ -34,8 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         app_id: ONESIGNAL_APP_ID,
         included_segments: ["All"],
         contents: { 
-          it: `Nuovo allenamento per il gruppo ${groupName}!`,
-          en: `New training for group ${groupName}!` 
+          it: `Nuovo allenamento per il gruppo ${groupName || 'PeakSwim'}!`,
+          en: `New training for group ${groupName || 'PeakSwim'}!` 
         },
         headings: { 
           it: "PeakSwim: Nuovo Allenamento",
@@ -49,14 +49,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const result = await response.json();
+    console.log("OneSignal Full Response:", JSON.stringify(result));
 
     if (!response.ok) {
+      console.error(`OneSignal Error ${response.status}:`, result);
       return res.status(response.status).json(result);
     }
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Serverless Function Error:", error);
+    console.error("Serverless Function Internal Error:", error);
     return res.status(500).json({ error: error.message });
   }
 }
