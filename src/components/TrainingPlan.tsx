@@ -243,7 +243,7 @@ export default function TrainingPlan() {
         method: "POST",
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "Authorization": `Basic ${ONESIGNAL_REST_API_KEY}`
+          "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`
         },
         body: JSON.stringify({
           app_id: ONESIGNAL_APP_ID,
@@ -264,14 +264,16 @@ export default function TrainingPlan() {
       });
 
       if (!response.ok) {
-        throw new Error("Errore durante l'invio via OneSignal");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("OneSignal Error Details:", errorData);
+        throw new Error(errorData.errors?.[0] || "Errore durante l'invio via OneSignal");
       }
 
       setShowNotifyModal(false);
       alert("Notifiche inviate con successo agli atleti tramite OneSignal!");
     } catch (err) {
       console.error("Errore invio notifiche:", err);
-      alert("Errore nell'invio delle notifiche. Assicurati che le Edge Functions siano configurate.");
+      alert("Errore nell'invio delle notifiche tramite OneSignal. Verifica la connessione e le chiavi.");
     } finally {
       setIsSendingNotification(false);
     }
