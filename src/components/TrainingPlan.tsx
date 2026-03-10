@@ -256,17 +256,6 @@ export default function TrainingPlan() {
       setIsSendingNotification(false);
     }
   };
-Line 233: 
-Line 234: 
-Line 235: 
-Line 236: 
-Line 237: 
-Line 238: 
-Line 239: 
-Line 240: 
-Line 241: 
-Line 242: 
-Line 243: 
 
   // 4. Fetch Analytics
   useEffect(() => {
