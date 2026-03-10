@@ -12,6 +12,7 @@ export default function AthletesList() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [coach, setCoach] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [editingAthleteId, setEditingAthleteId] = useState<string | null>(null);
   const [showOptionsId, setShowOptionsId] = useState<string | null>(null);
@@ -228,6 +229,8 @@ export default function AthletesList() {
                 <input 
                   type="text" 
                   placeholder="Cerca un atleta..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-800"
                 />
               </div>
@@ -237,11 +240,13 @@ export default function AthletesList() {
             </div>
             
             <div className="divide-y divide-slate-100">
-              {athletes.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">Nessun atleta iscritto. Condividi il tuo codice invito!</div>
+              {athletes.filter(a => (a.full_name || a.email).toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+                <div className="p-8 text-center text-slate-500">Nessun atleta iscritto trovato.</div>
               ) : (
-                athletes.map(athlete => (
-                  <div key={athlete.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50/50 transition">
+                athletes
+                  .filter(a => (a.full_name || a.email).toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map(athlete => (
+                  <div key={athlete.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50/50 transition relative">
                     <div className="flex items-center space-x-3 flex-1">
                       <div className="w-12 h-12 rounded-full bg-blue-100 border-2 border-white shadow-sm flex items-center justify-center font-bold text-blue-600 text-lg">
                         {athlete.full_name?.[0] || '?'}
