@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const postData = JSON.stringify({
     app_id: String(APP_ID),
-    included_segments: ["Subscribed Users"],
+    included_segments: ["All"],
     headings: { 
       it: "PeakSwim: Nuovo Allenamento",
       en: "PeakSwim: New Training" 
