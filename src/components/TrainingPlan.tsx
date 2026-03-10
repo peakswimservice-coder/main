@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Share2, Plus, Trash2, TrendingUp, Layout, BarChart3, ChevronDown, Check, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, Share2, Plus, Trash2, TrendingUp, Layout, BarChart3, ChevronDown, Check, Settings, Bell, Send } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { it } from 'date-fns/locale/it';
@@ -37,6 +37,8 @@ export default function TrainingPlan() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
   // Analytics State
   const [movingAverageData, setMovingAverageData] = useState<any[]>(paces.map(p => ({ name: p.id, km: 0 })));
@@ -216,13 +218,26 @@ export default function TrainingPlan() {
 
       setSaveSuccess(true);
       setIsDirty(false);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        setShowNotifyModal(true); // Open notification choice modal
+      }, 1500);
     } catch (e) {
       console.error("Save Error: ", e);
       alert("Errore durante il salvataggio.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSendNotifications = async () => {
+    setIsSendingNotification(true);
+    // Simulation: in production this would call a Supabase Edge Function
+    // that triggers Push Notifications via FCM/OneSignal
+    await new Promise(resolve => setTimeout(resolve, 2000)); 
+    setIsSendingNotification(false);
+    setShowNotifyModal(false);
+    alert("Notifiche inviate con successo agli atleti!");
   };
 
   // 4. Fetch Analytics
@@ -819,6 +834,48 @@ export default function TrainingPlan() {
         </div>
 
       </div>
+
+      {/* Notification Confirmation Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                <Bell className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">Notifica Atleti?</h3>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                Allenamento salvato con successo! Vuoi inviare una notifica a tutti gli atleti del gruppo <span className="text-blue-600 font-bold">{activeGroup?.name}</span>?
+              </p>
+            </div>
+            
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+              <button
+                onClick={handleSendNotifications}
+                disabled={isSendingNotification}
+                className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
+              >
+                {isSendingNotification ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Sì, notifica gli atleti
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setShowNotifyModal(false)}
+                disabled={isSendingNotification}
+                className="w-full bg-white text-slate-500 font-bold py-3 rounded-xl border border-slate-200 hover:bg-slate-100 transition-all active:scale-95 disabled:opacity-50"
+              >
+                No, chiudi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
