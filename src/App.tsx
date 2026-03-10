@@ -10,6 +10,7 @@ import CompanyPanel from './components/CompanyPanel';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 import { Session } from '@supabase/supabase-js';
+import { Analytics } from '@vercel/analytics/react';
 
 export type ViewType = 'dashboard' | 'athletes' | 'training' | 'events' | 'messages' | 'admin' | 'company_management';
 export type UserRole = 'admin' | 'company_manager' | 'coach' | 'none';
@@ -122,6 +123,7 @@ function App() {
           </div>
         )}
       </main>
+      <Analytics />
     </div>
   );
 }
