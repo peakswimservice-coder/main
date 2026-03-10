@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Share2, Plus, Trash2, TrendingUp, Activity, BarChart3, ChevronDown, Check, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, Share2, Plus, Trash2, TrendingUp, Layout, BarChart3, ChevronDown, Check, Settings } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import { it } from 'date-fns/locale/it';
@@ -461,155 +461,173 @@ export default function TrainingPlan() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto pb-24 lg:pb-8">
       
       {/* Date Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center">
-            Training <span className="text-blue-600 ml-2">Builder</span>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center">
+            Training <span className="text-blue-600 ml-1.5">Builder</span>
           </h1>
-          <p className="text-slate-500 text-sm font-medium mt-1 uppercase tracking-wider">Gestione Piani di Allenamento</p>
+          <p className="text-slate-400 text-[10px] font-bold mt-0.5 uppercase tracking-widest">Gestione Piani</p>
         </div>
 
-        <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner w-full sm:w-auto">
-          <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 hover:bg-slate-50 rounded-lg text-slate-600 transition shrink-0"><ChevronLeft className="w-5 h-5" /></button>
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner w-full sm:w-auto">
+          <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-600 transition shrink-0"><ChevronLeft className="w-4 h-4" /></button>
           
-          <div className="relative flex-1 sm:w-48 px-2 flex items-center justify-center">
+          <div className="relative flex-1 sm:w-40 px-2 flex items-center justify-center">
              <DatePicker
                 selected={selectedDate}
                 onChange={(date: Date | null) => date && setSelectedDate(date)}
                 dateFormat="eeee dd MMMM"
                 locale="it"
-                className="bg-transparent font-bold text-slate-800 text-sm text-center w-full outline-none cursor-pointer"
+                className="bg-transparent font-bold text-slate-800 text-xs text-center w-full outline-none cursor-pointer"
              />
-             <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
+             <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
           </div>
 
-          <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 hover:bg-slate-50 rounded-lg text-slate-600 transition shrink-0"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-600 transition shrink-0"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </header>
 
-      {/* Group Selector - Top Banner */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
-        <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 text-sm">Gruppi</h3>
-          <button 
-            onClick={() => setIsEditingGroups(!isEditingGroups)}
-            className={`p-1.5 rounded-lg transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100'}`}
-            title="Gestisci Gruppi"
-          >
-            {isEditingGroups ? <Check className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
-          </button>
-        </div>
-        <div className={`p-2 flex gap-2 no-scrollbar overflow-x-auto ${isEditingGroups ? 'flex-col' : 'flex-row xl:grid xl:grid-cols-4'}`}>
-          {groups.map((group) => {
-            const isActive = activeGroup?.id === group.id && !isEditingGroups;
-            return (
-              <div key={group.id} className="relative group/btn shrink-0">
-                {isEditingGroups ? (
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="text" 
-                      defaultValue={group.name}
-                      onBlur={async (e) => {
-                         if (e.target.value !== group.name && e.target.value.trim() !== '') {
-                           const {error} = await supabase.from('groups').update({name: e.target.value}).eq('id', group.id);
-                           if(!error) { fetchGroups(); if(activeGroup?.id === group.id) setActiveGroup({...activeGroup, name: e.target.value}); }
-                         }
-                      }}
-                      className="w-full px-2 py-1.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                    />
-                    <button 
-                      onClick={async () => {
-                         const {error} = await supabase.from('groups').delete().eq('id', group.id);
-                         if(error) alert("Impossibile eliminare: ci sono allenamenti associati a questo gruppo.");
-                         else fetchGroups();
-                      }}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button 
-                    onClick={() => setActiveGroup(group)}
-                    className={`w-full min-w-[100px] text-left p-2 rounded-xl transition shrink-0 border relative ${
-                      isActive 
-                      ? 'bg-blue-50 border-blue-200 shadow-sm' 
-                      : 'bg-white border-transparent hover:bg-slate-50 border-slate-100'
-                    }`}
-                  >
-                    <span className={`block font-bold text-xs ${isActive ? 'text-blue-800' : 'text-slate-700'}`}>{group.name}</span>
-                    {isActive && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500"></div>}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-          
-          {isEditingGroups && (
-            <button
-              onClick={async () => {
-                const {error} = await supabase.from('groups').insert({name: 'Nuovo Gruppo'});
-                if(!error) fetchGroups();
-              }}
-              className="w-full mt-2 py-2 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-bold hover:bg-slate-50 hover:text-blue-600 transition flex items-center justify-center"
+      {/* Selectors Section - Unified Layout */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden divide-y divide-slate-50">
+        {/* Row 1: Groups */}
+        <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex items-center justify-between min-w-[80px]">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gruppo</span>
+            <button 
+              onClick={() => setIsEditingGroups(!isEditingGroups)}
+              className={`sm:hidden p-1 rounded-md transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400'}`}
             >
-              <Plus className="w-4 h-4 mr-1" /> Aggiungi Gruppo
+              <Settings className="w-3.5 h-3.5" />
             </button>
-          )}
+          </div>
+          
+          <div className="flex-1 flex gap-2 no-scrollbar overflow-x-auto py-1 items-center">
+            {groups.map((group) => {
+              const isActive = activeGroup?.id === group.id && !isEditingGroups;
+              return (
+                <div key={group.id} className="relative shrink-0">
+                  {isEditingGroups ? (
+                    <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1">
+                      <input 
+                        type="text" 
+                        defaultValue={group.name}
+                        onBlur={async (e) => {
+                           if (e.target.value !== group.name && e.target.value.trim() !== '') {
+                             const {error} = await supabase.from('groups').update({name: e.target.value}).eq('id', group.id);
+                             if(!error) { fetchGroups(); if(activeGroup?.id === group.id) setActiveGroup({...activeGroup, name: e.target.value}); }
+                           }
+                        }}
+                        className="w-24 px-1.5 py-0.5 text-xs font-bold text-slate-700 bg-transparent outline-none"
+                      />
+                      <button 
+                        onClick={async () => {
+                           const {error} = await supabase.from('groups').delete().eq('id', group.id);
+                           if(error) alert("Impossibile eliminare: ci sono allenamenti associati.");
+                           else fetchGroups();
+                        }}
+                        className="p-1 text-red-400 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setActiveGroup(group)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                        isActive 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                      }`}
+                    >
+                      {group.name}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+            
+            {!isEditingGroups && (
+              <button 
+                onClick={() => setIsEditingGroups(true)}
+                className="p-1.5 text-slate-400 hover:text-blue-500 transition"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+
+            {isEditingGroups && (
+              <button
+                onClick={async () => {
+                  const {error} = await supabase.from('groups').insert({name: 'Nuovo'});
+                  if(!error) fetchGroups();
+                }}
+                className="px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-slate-400 text-xs font-bold hover:bg-slate-50 transition"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Session Types */}
+        <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[80px]">Programma</span>
+          <div className="flex gap-2">
+            {sessionTypes.map(type => (
+              <button 
+                key={type}
+                onClick={() => setActiveSessionType(type)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  activeSessionType === type 
+                  ? 'bg-slate-800 border-slate-800 text-white shadow-md shadow-slate-200' 
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* Main Builder Column - FIRST in Mobile/Grid Order */}
+        {/* Main Builder Column */}
         <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col xl:order-first lg:min-h-[700px]">
           
-          <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50/50 rounded-t-2xl">
-             <div>
-              <h2 className="text-xl font-bold text-slate-900 flex items-center">
-                Programma <span className="text-blue-600 ml-2 bg-blue-100 px-3 py-1 rounded-lg text-lg hidden sm:inline-block">{activeGroup?.name}</span>
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 rounded-t-2xl">
+             <div className="flex items-center gap-3">
+              <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center">
+                <Layout className="w-4 h-4 mr-2" />
+                Dettagli <span className="text-slate-900 ml-2 normal-case tracking-normal font-black">{activeGroup?.name}</span>
               </h2>
               
-              <div className="flex bg-slate-200/50 p-1 rounded-xl w-fit mt-3">
-                 {sessionTypes.map(type => (
-                   <button 
-                     key={type}
-                     onClick={() => setActiveSessionType(type)}
-                     className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                       activeSessionType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                     }`}
-                   >
-                     {type}
-                   </button>
-                 ))}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3">
-                <span className="text-sm font-bold text-blue-800 flex items-center bg-blue-50 px-2.5 py-1.5 rounded-lg border border-blue-100">
-                  <TrendingUp className="w-4 h-4 mr-1.5 text-blue-500" /> 
-                  Volume Previsto: <span className="text-blue-900 ml-1.5 font-black">{(totalVolume / 1000).toFixed(1)} km</span>
-                </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                    onClick={handleSharePdf}
+                    disabled={isDirty || isGeneratingPdf || blocks.length === 0}
+                    className={`p-2 rounded-xl border transition-all ${isDirty || blocks.length === 0 ? 'opacity-30 cursor-not-allowed' : 'border-slate-200 text-slate-600 hover:bg-white hover:border-blue-300 hover:text-blue-600 active:scale-95'}`}
+                    title="Condividi PDF"
+                >
+                  {isGeneratingPdf ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent animate-spin rounded-full" /> : <Share2 className="w-4 h-4" />}
+                </button>
+                
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={`p-2 rounded-xl border-b-2 transition-all active:translate-y-0.5 active:border-b-0 ${saveSuccess ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-blue-600 border-blue-700 text-white hover:brightness-110 shadow-sm disabled:opacity-50'}`}
+                  title="Salva"
+                >
+                  {saveSuccess ? <Check className="w-4 h-4" /> : 
+                   isSaving    ? <div className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-               <button
-                  onClick={handleSharePdf}
-                  disabled={isDirty || isGeneratingPdf || blocks.length === 0}
-                  className={`bg-white border text-slate-600 px-4 py-2.5 rounded-xl font-bold flex items-center justify-center transition-all flex-1 sm:flex-none ${isDirty || blocks.length === 0 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' : 'border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm active:translate-y-1'}`}
-                  title={isDirty ? "Salva prima di condividere" : "Condividi Programma in PDF"}
-               >
-                 {isGeneratingPdf ? "Gen..." : <><Share2 className="w-5 h-5 sm:mr-2" /> <span className="hidden sm:inline">Condividi</span></>}
-               </button>
-              
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`${saveSuccess ? 'bg-emerald-500 border-emerald-600' : 'bg-blue-600 border-blue-700'} text-white border-b-4 px-6 py-2.5 rounded-xl font-bold flex items-center justify-center hover:brightness-110 active:border-b-0 active:translate-y-1 transition-all flex-[2] sm:flex-none disabled:opacity-50`}
-              >
-                {saveSuccess ? <><Check className="w-5 h-5 mr-2" /> Salvato!</> : 
-                 isSaving    ? "Salvataggio..." : <><Save className="w-5 h-5 mr-2" /> Salva Sessione</>}
-              </button>
+            <div className="hidden sm:flex items-center gap-4">
+              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 uppercase tracking-tighter">
+                VOL: <span className="text-blue-900 ml-1">{(totalVolume / 1000).toFixed(1)}km</span>
+              </span>
             </div>
           </div>
 
