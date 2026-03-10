@@ -232,7 +232,7 @@ export default function TrainingPlan() {
 
   const handleSendNotifications = async () => {
     if (!activeGroup) return;
-    const APP_VERSION = "1.0.7-debug"; // Multi-probe auto-detect
+    const APP_VERSION = "1.0.8-debug"; // Final diagnostic probe
     setIsSendingNotification(true);
     
     try {
