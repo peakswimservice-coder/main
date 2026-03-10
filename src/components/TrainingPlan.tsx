@@ -535,14 +535,14 @@ export default function TrainingPlan() {
                     ) : (
                       <button 
                         onClick={() => setActiveGroup(group)}
-                        className={`w-full min-w-[150px] xl:min-w-0 xl:w-full text-left p-3 rounded-xl transition shrink-0 border relative ${
+                        className={`w-full min-w-[100px] xl:min-w-0 xl:w-full text-left p-2 xl:p-3 rounded-xl transition shrink-0 border relative ${
                           isActive 
                           ? 'bg-blue-50 border-blue-200 shadow-sm' 
                           : 'bg-white border-transparent hover:bg-slate-50 border-slate-100'
                         }`}
                       >
-                        <span className={`block font-bold ${isActive ? 'text-blue-800' : 'text-slate-700'}`}>{group.name}</span>
-                        {isActive && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500"></div>}
+                        <span className={`block font-bold text-xs xl:text-sm ${isActive ? 'text-blue-800' : 'text-slate-700'}`}>{group.name}</span>
+                        {isActive && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500"></div>}
                       </button>
                     )}
                   </div>
