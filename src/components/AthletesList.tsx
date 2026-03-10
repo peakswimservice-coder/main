@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Plus, UserPlus, Check, X } from 'lucide-react';
+import { Search, Filter, MoreVertical, Plus, UserPlus, Check, X, Edit2, Trash2 } from 'lucide-react';
 
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -12,6 +12,9 @@ export default function AthletesList() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [coach, setCoach] = useState<any>(null);
+
+  const [editingAthleteId, setEditingAthleteId] = useState<string | null>(null);
+  const [showOptionsId, setShowOptionsId] = useState<string | null>(null);
 
   const fetchData = async (currentSession: Session) => {
     setLoading(true);
@@ -88,7 +91,6 @@ export default function AthletesList() {
 
       if (error) throw error;
 
-      // 4. Invia notifica all'atleta (se status_update è configurato e l'atleta ha un player_id)
       await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,6 +133,41 @@ export default function AthletesList() {
       if (session) fetchData(session);
     } catch (err) {
       console.error('Errore durante il rifiuto:', err);
+    }
+  };
+
+  const handleRemoveAthlete = async (athleteId: string) => {
+    if (!confirm('Sei sicuro di voler rimuovere questo atleta? Dovrà inserire nuovamente il codice invito per rientrare.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('athletes')
+        .delete()
+        .eq('id', athleteId);
+
+      if (error) throw error;
+      if (session) fetchData(session);
+    } catch (err) {
+      console.error('Errore durante la rimozione:', err);
+      alert('Errore durante la rimozione.');
+    }
+  };
+
+  const handleUpdateGroup = async (athleteId: string, newGroupId: string) => {
+    if (!newGroupId) return;
+    try {
+      const { error } = await supabase
+        .from('athletes')
+        .update({ group_id: newGroupId })
+        .eq('id', athleteId);
+
+      if (error) throw error;
+      
+      setEditingAthleteId(null);
+      if (session) fetchData(session);
+    } catch (err) {
+      console.error('Errore durante l\'aggiornamento del gruppo:', err);
+      alert('Errore durante l\'aggiornamento.');
     }
   };
 
@@ -216,13 +253,71 @@ export default function AthletesList() {
                     
                     <div className="flex items-center justify-between sm:w-2/3 md:w-1/2 gap-4">
                       <div className="flex-1">
-                        <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
-                          {athlete.groups?.name || 'Nessun Gruppo'}
-                        </span>
+                        {editingAthleteId === athlete.id ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              id={`edit-group-${athlete.id}`}
+                              defaultValue={athlete.group_id || ''}
+                              className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 flex-1 min-w-[120px]"
+                            >
+                              <option value="" disabled>Seleziona</option>
+                              {groups.map(g => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                              ))}
+                            </select>
+                            <button 
+                              onClick={() => {
+                                const sel = document.getElementById(`edit-group-${athlete.id}`) as HTMLSelectElement;
+                                handleUpdateGroup(athlete.id, sel.value);
+                              }}
+                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => setEditingAthleteId(null)}
+                              className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
+                            {athlete.groups?.name || 'Nessun Gruppo'}
+                          </span>
+                        )}
                       </div>
                       
-                      <div className="shrink-0 text-right">
-                        <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"><MoreVertical className="w-5 h-5" /></button>
+                      <div className="shrink-0 text-right relative">
+                        <button 
+                          onClick={() => setShowOptionsId(showOptionsId === athlete.id ? null : athlete.id)}
+                          className={`p-2 rounded-lg transition ${showOptionsId === athlete.id ? 'bg-slate-100 text-slate-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        
+                        {showOptionsId === athlete.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-10">
+                            <button 
+                              onClick={() => {
+                                setEditingAthleteId(athlete.id);
+                                setShowOptionsId(null);
+                              }}
+                              className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center"
+                            >
+                              <Edit2 className="w-4 h-4 mr-2" /> Cambia Gruppo
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setShowOptionsId(null);
+                                handleRemoveAthlete(athlete.id);
+                              }}
+                              className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center border-t border-slate-50"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Rimuovi Atleta
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
