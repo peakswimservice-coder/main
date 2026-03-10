@@ -231,14 +231,42 @@ export default function TrainingPlan() {
   };
 
   const handleSendNotifications = async () => {
+    if (!activeGroup) return;
     setIsSendingNotification(true);
-    // Simulation: in production this would call a Supabase Edge Function
-    // that triggers Push Notifications via FCM/OneSignal
-    await new Promise(resolve => setTimeout(resolve, 2000)); 
-    setIsSendingNotification(false);
-    setShowNotifyModal(false);
-    alert("Notifiche inviate con successo agli atleti!");
+    
+    try {
+      // Invochiamo la Edge Function di Supabase
+      const { data, error } = await supabase.functions.invoke('notify-athletes', {
+        body: { 
+          groupId: activeGroup.id,
+          groupName: activeGroup.name,
+          sessionType: activeSessionType,
+          date: format(selectedDate, 'yyyy-MM-dd')
+        }
+      });
+
+      if (error) throw error;
+
+      setShowNotifyModal(false);
+      alert("Notifiche inviate con successo agli atleti!");
+    } catch (err) {
+      console.error("Errore invio notifiche:", err);
+      alert("Errore nell'invio delle notifiche. Assicurati che le Edge Functions siano configurate.");
+    } finally {
+      setIsSendingNotification(false);
+    }
   };
+Line 233: 
+Line 234: 
+Line 235: 
+Line 236: 
+Line 237: 
+Line 238: 
+Line 239: 
+Line 240: 
+Line 241: 
+Line 242: 
+Line 243: 
 
   // 4. Fetch Analytics
   useEffect(() => {
