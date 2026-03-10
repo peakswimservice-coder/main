@@ -235,20 +235,40 @@ export default function TrainingPlan() {
     setIsSendingNotification(true);
     
     try {
-      // Invochiamo la Edge Function di Supabase
-      const { data, error } = await supabase.functions.invoke('notify-athletes', {
-        body: { 
-          groupId: activeGroup.id,
-          groupName: activeGroup.name,
-          sessionType: activeSessionType,
-          date: format(selectedDate, 'yyyy-MM-dd')
-        }
+      // Configuriamo l'invio tramite OneSignal REST API
+      const ONESIGNAL_APP_ID = "d3c0042e-c767-491d-882e-0ebfc879276c";
+      const ONESIGNAL_REST_API_KEY = "os_v2_app_2paailwhm5er3cbob274q6jhntakfeg75vsu6efh4towkam62vnmy24cmrtothwj7olzruhudfjnto5ngak7tv3cpcjxrpu7jua6mtq";
+
+      const response = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Authorization": `Basic ${ONESIGNAL_REST_API_KEY}`
+        },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          included_segments: ["All"], // Per ora inviamo a tutti come richiesto
+          contents: { 
+            it: `Nuovo allenamento per il gruppo ${activeGroup.name}!`,
+            en: `New training for group ${activeGroup.name}!` 
+          },
+          headings: { 
+            it: "PeakSwim: Nuovo Allenamento",
+            en: "PeakSwim: New Training" 
+          },
+          data: { 
+            groupId: activeGroup.id,
+            date: format(selectedDate, 'yyyy-MM-dd')
+          }
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error("Errore durante l'invio via OneSignal");
+      }
 
       setShowNotifyModal(false);
-      alert("Notifiche inviate con successo agli atleti!");
+      alert("Notifiche inviate con successo agli atleti tramite OneSignal!");
     } catch (err) {
       console.error("Errore invio notifiche:", err);
       alert("Errore nell'invio delle notifiche. Assicurati che le Edge Functions siano configurate.");

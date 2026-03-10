@@ -10,7 +10,7 @@ import CompanyPanel from './components/CompanyPanel';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 import { Session } from '@supabase/supabase-js';
-import { initializeNotifications } from './lib/fcm';
+import { initializeOneSignal } from './lib/onesignal';
 
 export type ViewType = 'dashboard' | 'athletes' | 'training' | 'events' | 'messages' | 'admin' | 'company_management';
 export type UserRole = 'admin' | 'company_manager' | 'coach' | 'none';
@@ -62,7 +62,7 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user?.id) {
-        initializeNotifications(session.user.id);
+        initializeOneSignal(session.user.id);
       }
       if (session?.user?.email) {
         detectRole(session.user.email).then(() => setLoading(false));
@@ -75,7 +75,7 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user?.id) {
-        initializeNotifications(session.user.id);
+        initializeOneSignal(session.user.id);
       }
       if (session?.user?.email) {
         detectRole(session.user.email);
