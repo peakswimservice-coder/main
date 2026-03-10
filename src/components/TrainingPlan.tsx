@@ -239,6 +239,11 @@ export default function TrainingPlan() {
       const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID;
       const ONESIGNAL_REST_API_KEY = import.meta.env.VITE_ONESIGNAL_REST_API_KEY;
 
+      if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+        console.error("Variabili OneSignal mancanti:", { appId: !!ONESIGNAL_APP_ID, apiKey: !!ONESIGNAL_REST_API_KEY });
+        throw new Error("Configurazione OneSignal mancante. Assicurati di aver aggiunto le variabili d'ambiente su Vercel.");
+      }
+
       const response = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",
         headers: {
@@ -271,9 +276,9 @@ export default function TrainingPlan() {
 
       setShowNotifyModal(false);
       alert("Notifiche inviate con successo agli atleti tramite OneSignal!");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Errore invio notifiche:", err);
-      alert("Errore nell'invio delle notifiche tramite OneSignal. Verifica la connessione e le chiavi.");
+      alert(err.message || "Errore nell'invio delle notifiche tramite OneSignal. Verifica la connessione e le chiavi.");
     } finally {
       setIsSendingNotification(false);
     }
