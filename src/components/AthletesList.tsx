@@ -1,31 +1,166 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Plus, UserPlus, Check, X } from 'lucide-react';
 
-const athletes = [
-  { id: 1, name: 'Alessandro Bianchi', group: 'Agonisti', age: 16, attendance: 92, status: 'active' },
-  { id: 2, name: 'Martina Rossi', group: 'Agonisti', age: 15, attendance: 88, status: 'active' },
-  { id: 3, name: 'Lorenzo Verdi', group: 'Esordienti A', age: 12, attendance: 95, status: 'active' },
-  { id: 4, name: 'Giulia Neri', group: 'Esordienti B', age: 10, attendance: 80, status: 'active' },
-];
-
-const pending = [
-  { id: 5, name: 'Matteo Ricci', group: 'Master', age: 28, requestDate: 'Oggi' },
-  { id: 6, name: 'Sofia Conti', group: 'Agonisti', age: 14, requestDate: 'Ieri' },
-];
+import { supabase } from '../supabaseClient';
+import { Session } from '@supabase/supabase-js';
 
 export default function AthletesList() {
   const [activeTab, setActiveTab] = useState<'active' | 'pending'>('active');
+  const [athletes, setAthletes] = useState<any[]>([]);
+  const [pending, setPending] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [coach, setCoach] = useState<any>(null);
+
+  const fetchData = async (currentSession: Session) => {
+    setLoading(true);
+    try {
+      // 1. Fetch coach data
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('email', currentSession.user.email)
+        .maybeSingle();
+
+      if (coachData) {
+        setCoach(coachData);
+
+        // 2. Fetch athletes for this coach
+        const { data: athletesData } = await supabase
+          .from('athletes')
+          .select(`
+            *,
+            groups ( name )
+          `)
+          .eq('coach_id', coachData.id)
+          .order('created_at', { ascending: false });
+
+        if (athletesData) {
+          setAthletes(athletesData.filter(a => a.status === 'active'));
+          setPending(athletesData.filter(a => a.status === 'pending'));
+        }
+
+        // 3. Fetch groups for assignment
+        const { data: groupsData } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('coach_id', currentSession.user.id)
+          .order('name');
+          
+        if (groupsData) setGroups(groupsData);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        fetchData(session);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        fetchData(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleApprove = async (athleteId: string, groupId: string | null) => {
+    if (!groupId) {
+      alert('Seleziona un gruppo per l\'atleta prima di approvare.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('athletes')
+        .update({ status: 'active', group_id: groupId })
+        .eq('id', athleteId);
+
+      if (error) throw error;
+
+      // 4. Invia notifica all'atleta (se status_update è configurato e l'atleta ha un player_id)
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'status_update',
+          athleteId: athleteId,
+          status: 'active',
+          groupName: groups.find(g => g.id === groupId)?.name
+        })
+      });
+
+      if (session) fetchData(session);
+    } catch (err) {
+      console.error('Errore durante l\'approvazione:', err);
+      alert('Errore durante l\'approvazione.');
+    }
+  };
+
+  const handleReject = async (athleteId: string) => {
+    if (!confirm('Sei sicuro di voler rifiutare questa richiesta?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('athletes')
+        .update({ status: 'rejected' })
+        .eq('id', athleteId);
+
+      if (error) throw error;
+
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'status_update',
+          athleteId: athleteId,
+          status: 'rejected'
+        })
+      });
+
+      if (session) fetchData(session);
+    } catch (err) {
+      console.error('Errore durante il rifiuto:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-500">
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Roster Atleti</h1>
-          <p className="text-slate-500 mt-1">Gestisci i gruppi, approva i nuovi iscritti ed analizza le presenze.</p>
+          <p className="text-slate-500 mt-1">Gestisci i gruppi, approva i nuovi iscritti e analizza le presenze.</p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm">
-          <Plus className="w-5 h-5 mr-2" /> Nuovo Atleta
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          {coach?.invite_code && (
+            <div className="bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm flex items-center gap-3">
+              <span className="text-sm font-medium text-slate-500">Codice Invito:</span>
+              <span className="font-black tracking-widest text-lg text-blue-600 uppercase">{coach.invite_code}</span>
+            </div>
+          )}
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm w-full sm:w-auto">
+            <Plus className="w-5 h-5 mr-2" /> Nuovo Atleta
+          </button>
+        </div>
       </header>
 
       <div className="flex space-x-1 bg-slate-200/50 p-1 rounded-xl w-fit">
@@ -40,7 +175,11 @@ export default function AthletesList() {
           className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center ${activeTab === 'pending' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-200/50'}`}
         >
           In Attesa
-          <span className="ml-2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{pending.length}</span>
+          {pending.length > 0 && (
+            <span className="ml-2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black tracking-wider">
+              {pending.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -62,60 +201,85 @@ export default function AthletesList() {
             </div>
             
             <div className="divide-y divide-slate-100">
-              {athletes.map(athlete => (
-                <div key={athlete.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50/50 transition">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${athlete.name}&backgroundColor=e2e8f0`} alt={athlete.name} className="w-12 h-12 rounded-full shadow-sm" />
-                    <div>
-                      <span className="font-bold text-slate-800 block text-lg sm:text-base">{athlete.name}</span>
-                      <span className="text-slate-500 text-sm font-medium">{athlete.age} anni</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between sm:w-2/3 md:w-1/2 gap-4">
-                    <div className="flex-1">
-                      <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">{athlete.group}</span>
+              {athletes.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">Nessun atleta iscritto. Condividi il tuo codice invito!</div>
+              ) : (
+                athletes.map(athlete => (
+                  <div key={athlete.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50/50 transition">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 border-2 border-white shadow-sm flex items-center justify-center font-bold text-blue-600 text-lg">
+                        {athlete.full_name?.[0] || '?'}
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-800 block text-lg sm:text-base">{athlete.full_name || athlete.email}</span>
+                      </div>
                     </div>
                     
-                    <div className="flex-1 flex items-center space-x-3">
-                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden max-w-[120px]">
-                        <div className={`h-full rounded-full ${athlete.attendance > 85 ? 'bg-green-500' : 'bg-amber-500'}`} style={{ width: `${athlete.attendance}%` }}></div>
+                    <div className="flex items-center justify-between sm:w-2/3 md:w-1/2 gap-4">
+                      <div className="flex-1">
+                        <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-100">
+                          {athlete.groups?.name || 'Nessun Gruppo'}
+                        </span>
                       </div>
-                      <span className="text-sm font-bold text-slate-700 w-10 text-right">{athlete.attendance}%</span>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"><MoreVertical className="w-5 h-5" /></button>
+                      
+                      <div className="shrink-0 text-right">
+                        <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"><MoreVertical className="w-5 h-5" /></button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         ) : (
           <div className="divide-y divide-slate-100">
-            {pending.map(p => (
-              <div key={p.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100 text-amber-600">
-                    <UserPlus className="w-6 h-6" />
+            {pending.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">Nessuna richiesta in attesa.</div>
+            ) : (
+              pending.map(p => (
+                <div key={p.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center border border-amber-100 text-amber-600 shrink-0">
+                      <UserPlus className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">{p.full_name || p.email}</h3>
+                      <p className="text-xs text-slate-400 mt-1">Richiesto il: {new Date(p.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">{p.name}</h3>
-                    <p className="text-slate-500 font-medium text-sm">Età: {p.age} • Ha richiesto di unirsi a: <strong className="text-slate-700">{p.group}</strong></p>
-                    <p className="text-xs text-slate-400 mt-1">Richiesto {p.requestDate.toLowerCase()}</p>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <select
+                      id={`group-${p.id}`}
+                      defaultValue=""
+                      className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 font-medium"
+                    >
+                      <option value="" disabled>Seleziona Gruppo</option>
+                      {groups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleReject(p.id)}
+                        className="flex-1 sm:flex-none px-4 py-2 border border-red-200 text-red-600 rounded-xl font-bold hover:bg-red-50 transition flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4 mr-1" /> Rifiuta
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const select = document.getElementById(`group-${p.id}`) as HTMLSelectElement;
+                          handleApprove(p.id, select.value);
+                        }}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center shadow-sm shadow-blue-600/20"
+                      >
+                        <Check className="w-4 h-4 mr-1" /> Approva
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-2 border-2 border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition flex items-center">
-                    <X className="w-4 h-4 mr-1" /> Rifiuta
-                  </button>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center shadow-sm">
-                    <Check className="w-4 h-4 mr-1" /> Approva e Assegna
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>

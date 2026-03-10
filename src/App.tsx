@@ -8,18 +8,21 @@ import Messages from './components/Messages';
 import AdminPanel from './components/AdminPanel';
 import CompanyPanel from './components/CompanyPanel';
 import Auth from './components/Auth';
+import AthleteOnboarding from './components/AthleteOnboarding';
 import { supabase } from './supabaseClient';
 import { Session } from '@supabase/supabase-js';
 import { initializeOneSignal } from './lib/onesignal';
 
 export type ViewType = 'dashboard' | 'athletes' | 'training' | 'events' | 'messages' | 'admin' | 'company_management';
-export type UserRole = 'admin' | 'company_manager' | 'coach' | 'none';
+export type UserRole = 'admin' | 'company_manager' | 'coach' | 'athlete' | 'none';
+export type AthleteStatus = 'pending' | 'active' | 'rejected' | 'none';
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>('none');
+  const [athleteStatus, setAthleteStatus] = useState<AthleteStatus>('none');
 
   const detectRole = async (email: string, currentSession: Session) => {
     if (email === 'peakswimservice@gmail.com') {
@@ -57,26 +60,40 @@ function App() {
       return;
     }
 
+    // Check if Athlete
+    const { data: athleteData } = await supabase
+      .from('athletes')
+      .select('status')
+      .eq('id', currentSession.user.id)
+      .maybeSingle();
+
+    if (athleteData) {
+      setUserRole('athlete');
+      setAthleteStatus(athleteData.status as AthleteStatus);
+      setCurrentView('dashboard');
+      initializeOneSignal(currentSession.user.id, 'athlete');
+      return;
+    }
+
     setUserRole('none');
-    initializeOneSignal(currentSession.user.id, 'none');
+    setAthleteStatus('none');
+    initializeOneSignal(currentSession.user.id, 'athlete');
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user?.email) {
-        detectRole(session.user.email, session).then(() => setLoading(false));
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession?.user?.email) {
+        detectRole(initialSession.user.email, initialSession).then(() => setLoading(false));
       } else {
         setLoading(false);
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.email) {
-        detectRole(session.user.email, session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession?.user?.email) {
+        detectRole(newSession.user.email, newSession);
       }
     });
 
@@ -120,10 +137,66 @@ function App() {
           </>
         )}
 
-        {userRole === 'none' && (
-          <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Accesso in attesa</h2>
-            <p className="text-slate-500 max-w-md">Il tuo account non è ancora associato a una società o a un ruolo di allenatore. Contatta il tuo responsabile per l'abilitazione.</p>
+        {userRole === 'athlete' && (
+          <>
+            {athleteStatus === 'active' && (
+              <>
+                {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} />}
+                {currentView === 'messages' && <Messages />}
+              </>
+            )}
+            
+            {athleteStatus === 'pending' && (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 animate-in fade-in duration-700">
+                <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-6 text-3xl flex items-center justify-center">
+                  ⏳
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Richiesta in sospeso</h2>
+                <p className="text-slate-500 max-w-md font-medium">La tua richiesta è stata inviata al tuo coach. Riceverai una notifica non appena verrai approvato.</p>
+              </div>
+            )}
+
+            {athleteStatus === 'rejected' && (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 animate-in fade-in duration-700">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 text-3xl flex items-center justify-center">
+                  ❌
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Richiesta non accettata</h2>
+                <p className="text-slate-500 max-w-md font-medium">Il coach non ha potuto accettare la tua richiesta. Contattalo direttamente o riprova con un altro codice.</p>
+                <button 
+                  onClick={() => setAthleteStatus('none')}
+                  className="mt-6 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition"
+                >
+                  Riprova
+                </button>
+              </div>
+            )}
+            
+            {athleteStatus === 'none' && (
+              <AthleteOnboarding 
+                userId={session.user.id}
+                email={session.user.email!}
+                fullName={session.user.user_metadata.full_name || null}
+                onComplete={() => detectRole(session.user.email!, session)}
+              />
+            )}
+          </>
+        )}
+
+        {userRole === 'none' && athleteStatus === 'none' && (
+          <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 animate-in fade-in duration-700">
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Benvenuto su PeakSwim</h2>
+            <p className="text-slate-500 max-w-md font-medium mb-8">Il tuo account sta venendo configurato. Come vuoi procedere?</p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button 
+                onClick={() => setUserRole('athlete')}
+                className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20"
+              >
+                Sono un Atleta
+              </button>
+              <div className="text-slate-300 flex items-center px-2">oppure</div>
+              <p className="text-slate-400 text-sm flex items-center">Contatta il tuo manager per l'abilitazione come Coach.</p>
+            </div>
           </div>
         )}
       </main>
