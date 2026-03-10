@@ -4,16 +4,19 @@ import { supabase } from '../supabaseClient';
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID; 
 
 export const initializeOneSignal = async (userId: string) => {
+  if (!ONESIGNAL_APP_ID) {
+    console.error("OS_DEBUG: ONESIGNAL_APP_ID non trovato nelle variabili d'ambiente.");
+    return;
+  }
+
   try {
     const OS: any = OneSignal;
     
     await OS.init({
       appId: ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: true,
-      safari_web_id: "web.onesignal.auto.69083167-7592-48a0-83ea-6b997c64c781", // Opzionale ma consigliato per Safari legacy
-      notifyButton: {
-        enable: false,
-      },
+      safari_web_id: "web.onesignal.auto.69083167-7592-48a0-83ea-6b997c64c781",
+      notifyButton: { enable: false },
       promptOptions: {
         slidedown: {
           enabled: true,
@@ -22,42 +25,48 @@ export const initializeOneSignal = async (userId: string) => {
           pageViews: 1
         }
       },
-      welcomeNotification: {
-        disable: true
-      }
+      welcomeNotification: { disable: true }
     });
 
-    // Registra l'utente esterno
     await OS.setExternalUserId(userId);
     
-    // Controlla e salva il Player ID se già sottoscritto
     const playerId = await OS.getUserId();
     if (playerId) {
-      console.log("OS_DEBUG: Player ID esistente:", playerId);
+      console.log("OS_DEBUG: Registrato con ID:", playerId);
       await syncPlayerId(userId, playerId);
     }
 
-    // Ascolta i cambiamenti di sottoscrizione
     OS.on('subscriptionChange', async (isSubscribed: boolean) => {
-      console.log("OS_DEBUG: Sottoscrizione cambiata:", isSubscribed);
       if (isSubscribed) {
         const newPlayerId = await OS.getUserId();
-        if (newPlayerId) await syncPlayerId(userId, newPlayerId);
+        if (newPlayerId) {
+          alert(`Notifiche attivate! ID: ${newPlayerId.substring(0, 8)}...`);
+          await syncPlayerId(userId, newPlayerId);
+        }
       }
     });
 
   } catch (error) {
-    console.error("OS_DEBUG: Errore inizializzazione:", error);
+    console.error("OS_DEBUG: Errore:", error);
   }
 };
 
 export const promptForPushNotifications = async () => {
   try {
     const OS: any = OneSignal;
-    console.log("OS_DEBUG: Richiesta permessi manuale...");
+    const isSubscribed = await OS.isPushNotificationsEnabled();
+    
+    if (isSubscribed) {
+      const pId = await OS.getUserId();
+      alert(`Sei già registrato! ID: ${pId?.substring(0, 8)}...`);
+      return;
+    }
+
+    console.log("OS_DEBUG: Apertura prompt...");
     await OS.showNativePrompt();
   } catch (error) {
-    console.error("OS_DEBUG: Errore richiesta permessi:", error);
+    console.error("OS_DEBUG: Errore prompt:", error);
+    alert("Errore nell'apertura del permesso. Verifica se le notifiche sono bloccate nelle impostazioni del browser.");
   }
 };
 
