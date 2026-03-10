@@ -14,8 +14,8 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },
     { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'], isMock: true },
-    { id: 'training', label: 'Allenamenti', icon: Activity, roles: ['coach'] },
-    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach'], isMock: true },
+    { id: 'training', label: 'Allenamenti', icon: Activity, roles: ['coach', 'athlete'] },
+    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach', 'athlete'], isMock: true },
     { id: 'messages', label: 'Bacheca', icon: MessageSquare, roles: ['coach', 'athlete'], isMock: true },
     { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { id: 'company_management', label: 'Società', icon: Settings, roles: ['company_manager'] },

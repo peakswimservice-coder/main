@@ -24,7 +24,12 @@ const paces = [
 
 const sessionTypes = ['Fondo', 'Velocità', 'Altro'];
 
-export default function TrainingPlan() {
+interface TrainingPlanProps {
+  userRole?: 'admin' | 'company_manager' | 'coach' | 'athlete' | 'none';
+  userId?: string;
+}
+
+export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPlanProps) {
   const [groups, setGroups] = useState<any[]>([]);
   const [activeGroup, setActiveGroup] = useState<any>(null);
   const [isEditingGroups, setIsEditingGroups] = useState(false);
@@ -46,11 +51,30 @@ export default function TrainingPlan() {
 
   // 1. Fetch available groups
   const fetchGroups = async () => {
-    const { data } = await supabase.from('groups').select('*').order('name');
-    if (data) {
-      setGroups(data);
-      if (!activeGroup && data.length > 0) {
-         setActiveGroup(data.find(g => g.name === 'Agonisti') || data[0]);
+    if (userRole === 'athlete' && userId) {
+      const { data: athleteData } = await supabase
+        .from('athletes')
+        .select(`
+          group_id,
+          groups (*)
+        `)
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (athleteData && athleteData.groups) {
+        setGroups([athleteData.groups]);
+        setActiveGroup(athleteData.groups);
+      } else {
+        setGroups([]);
+        setActiveGroup(null);
+      }
+    } else {
+      const { data } = await supabase.from('groups').select('*').order('name');
+      if (data) {
+        setGroups(data);
+        if (!activeGroup && data.length > 0) {
+           setActiveGroup(data.find(g => g.name === 'Agonisti') || data[0]);
+        }
       }
     }
   };
@@ -530,12 +554,14 @@ export default function TrainingPlan() {
         <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center justify-between min-w-[80px]">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gruppo</span>
-            <button 
-              onClick={() => setIsEditingGroups(!isEditingGroups)}
-              className={`sm:hidden p-1 rounded-md transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400'}`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </button>
+            {userRole === 'coach' && (
+              <button 
+                onClick={() => setIsEditingGroups(!isEditingGroups)}
+                className={`sm:hidden p-1 rounded-md transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400'}`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           
           <div className="flex-1 flex gap-2 no-scrollbar overflow-x-auto py-1 items-center">
@@ -583,7 +609,7 @@ export default function TrainingPlan() {
               )
             })}
             
-            {!isEditingGroups && (
+            {!isEditingGroups && userRole === 'coach' && (
               <button 
                 onClick={() => setIsEditingGroups(true)}
                 className="p-1.5 text-slate-400 hover:text-blue-500 transition"
@@ -592,7 +618,7 @@ export default function TrainingPlan() {
               </button>
             )}
 
-            {isEditingGroups && (
+            {isEditingGroups && userRole === 'coach' && (
               <button
                 onClick={async () => {
                   const {error} = await supabase.from('groups').insert({name: 'Nuovo'});
@@ -649,15 +675,17 @@ export default function TrainingPlan() {
                   {isGeneratingPdf ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent animate-spin rounded-full" /> : <Share2 className="w-4 h-4" />}
                 </button>
                 
-                <button 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className={`p-2 rounded-xl border-b-2 transition-all active:translate-y-0.5 active:border-b-0 ${saveSuccess ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-blue-600 border-blue-700 text-white hover:brightness-110 shadow-sm disabled:opacity-50'}`}
-                  title="Salva"
-                >
-                  {saveSuccess ? <Check className="w-4 h-4" /> : 
-                   isSaving    ? <div className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-4 h-4" />}
-                </button>
+                {userRole === 'coach' && (
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className={`p-2 rounded-xl border-b-2 transition-all active:translate-y-0.5 active:border-b-0 ${saveSuccess ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-blue-600 border-blue-700 text-white hover:brightness-110 shadow-sm disabled:opacity-50'}`}
+                    title="Salva"
+                  >
+                    {saveSuccess ? <Check className="w-4 h-4" /> : 
+                     isSaving    ? <div className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full" /> : <Save className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -677,8 +705,10 @@ export default function TrainingPlan() {
                       type="text" 
                       value={block.title}
                       onChange={(e) => updateBlockTitle(block.id, e.target.value)}
-                      className="font-bold text-slate-800 text-sm bg-transparent outline-none focus:bg-white px-2 py-1 rounded transition border border-transparent focus:border-slate-300 w-full sm:w-auto min-w-[150px]"
+                      disabled={userRole !== 'coach'}
+                      className="font-bold text-slate-800 text-sm bg-transparent outline-none focus:bg-white px-2 py-1 rounded transition border border-transparent focus:border-slate-300 w-full sm:w-auto min-w-[150px] disabled:opacity-100 disabled:pointer-events-none"
                     />
+                    {userRole === 'coach' && (
                       <label className="flex items-center gap-2 cursor-pointer bg-white px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors w-max pdf-ignore">
                         <input 
                           type="checkbox" 
@@ -691,13 +721,16 @@ export default function TrainingPlan() {
                         />
                         <span className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors tracking-tight">Riporta su altri allenamenti</span>
                       </label>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2 self-end sm:self-auto">
                      <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-100">
                        {block.sets.reduce((acc: number, s:any) => acc + (Number(s.reps) * Number(s.distance)), 0)}m
                      </span>
-                    <button onClick={() => removeBlock(block.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                    {userRole === 'coach' && (
+                      <button onClick={() => removeBlock(block.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                    )}
                   </div>
                 </div>
                 
@@ -712,14 +745,16 @@ export default function TrainingPlan() {
                               type="number" 
                               value={set.reps || ''} 
                               onChange={(e) => updateSet(block.id, set.id, 'reps', Number(e.target.value))}
-                              className="w-12 px-2 py-1.5 text-center outline-none text-sm bg-slate-50"
+                              disabled={userRole !== 'coach'}
+                              className="w-12 px-2 py-1.5 text-center outline-none text-sm bg-slate-50 disabled:bg-transparent disabled:opacity-100 disabled:pointer-events-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <span className="px-1 text-slate-400 font-mono text-sm">x</span>
                             <input 
                               type="number" 
                               value={set.distance || ''} 
                               onChange={(e) => updateSet(block.id, set.id, 'distance', Number(e.target.value))}
-                              className="w-16 px-2 py-1.5 text-center outline-none text-sm bg-slate-50"
+                              disabled={userRole !== 'coach'}
+                              className="w-16 px-2 py-1.5 text-center outline-none text-sm bg-slate-50 disabled:bg-transparent disabled:opacity-100 disabled:pointer-events-none [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                               step="25"
                             />
                           </div>
@@ -731,7 +766,8 @@ export default function TrainingPlan() {
                             value={set.description} 
                             onChange={(e) => updateSet(block.id, set.id, 'description', e.target.value)}
                             placeholder="Descrizione..."
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:font-normal" 
+                            disabled={userRole !== 'coach'}
+                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:font-normal disabled:bg-transparent disabled:border-transparent disabled:opacity-100 disabled:pointer-events-none pt-2" 
                           />
                         </div>
 
@@ -740,40 +776,48 @@ export default function TrainingPlan() {
                             <select 
                               value={set.pace}
                               onChange={(e) => updateSet(block.id, set.id, 'pace', e.target.value)}
-                              className="w-full sm:w-28 appearance-none px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-8 cursor-pointer"
+                              disabled={userRole !== 'coach'}
+                              className="w-full sm:w-28 appearance-none px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-8 cursor-pointer disabled:opacity-100 disabled:pointer-events-none"
                               style={{ color: activePace.color, borderColor: `${activePace.color}40`, backgroundColor: `${activePace.color}0a` }}
                             >
                               {paces.map(p => (
                                 <option key={p.id} value={p.id} className="text-slate-800">{p.id} - {p.label.split(' - ')[1]}</option>
                               ))}
                             </select>
-                            <ChevronDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activePace.color }} />
+                            <ChevronDown className={`w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${userRole !== 'coach' ? 'hidden' : ''}`} style={{ color: activePace.color }} />
                           </div>
                           
-                          <button onClick={() => removeSet(block.id, set.id)} className="p-2 text-slate-200 hover:text-red-500 bg-white border border-slate-100 hover:border-red-200 rounded-lg transition sm:opacity-0 group-hover:opacity-100">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {userRole === 'coach' && (
+                            <button onClick={() => removeSet(block.id, set.id)} className="p-2 text-slate-200 hover:text-red-500 bg-white border border-slate-100 hover:border-red-200 rounded-lg transition sm:opacity-0 group-hover:opacity-100">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )
                   })}
-                  <div className="pt-2 px-2">
-                     <button onClick={() => addSet(block.id)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition w-full sm:w-auto justify-center">
-                       <Plus className="w-3 h-3 mr-1" /> Aggiungi Riga
-                     </button>
-                  </div>
+                  {userRole === 'coach' && (
+                    <div className="pt-2 px-2">
+                       <button onClick={() => addSet(block.id)} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition w-full sm:w-auto justify-center">
+                         <Plus className="w-3 h-3 mr-1" /> Aggiungi Riga
+                       </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
 
-            <button onClick={addBlock} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center">
-              <Plus className="w-5 h-5 mr-2" /> Aggiungi Blocco
-            </button>
+            {userRole === 'coach' && (
+              <button onClick={addBlock} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center">
+                <Plus className="w-5 h-5 mr-2" /> Aggiungi Blocco
+              </button>
+            )}
           </div>
         </div>
 
         {/* Analytics Column - LAST in Desktop/Grid Order */}
-        <div className="xl:col-span-1 space-y-6 flex flex-col xl:order-last">
+        {userRole === 'coach' && (
+          <div className="xl:col-span-1 space-y-6 flex flex-col xl:order-last">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 shadow-blue-900/5">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-bold text-slate-800 flex items-center text-sm"><BarChart3 className="w-4 h-4 mr-2 text-blue-500"/> Analisi ({activeSessionType})</h3>
@@ -854,6 +898,7 @@ export default function TrainingPlan() {
             </div>
           </div>
         </div>
+        )}
 
       </div>
 

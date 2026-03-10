@@ -131,7 +131,7 @@ function App() {
           <>
             {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} />}
             {currentView === 'athletes' && <AthletesList />}
-            {currentView === 'training' && <TrainingPlan />}
+            {currentView === 'training' && <TrainingPlan userRole={userRole} userId={session.user.id} />}
             {currentView === 'events' && <EventsList />}
             {currentView === 'messages' && <Messages />}
           </>
@@ -142,6 +142,8 @@ function App() {
             {athleteStatus === 'active' && (
               <>
                 {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} />}
+                {currentView === 'training' && <TrainingPlan userRole={userRole} userId={session.user.id} />}
+                {currentView === 'events' && <EventsList />}
                 {currentView === 'messages' && <Messages />}
               </>
             )}
