@@ -486,12 +486,79 @@ export default function TrainingPlan() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* Colonna Sinistra: Gruppi & Analytics */}
-        <div className="xl:col-span-1 space-y-6 flex flex-col">
+      {/* Selettore Gruppi - Ora in alto e orizzontale su mobile */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0 mb-6">
+        <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <h3 className="font-bold text-slate-800 text-sm">Gruppi</h3>
+          <button 
+            onClick={() => setIsEditingGroups(!isEditingGroups)}
+            className={`p-1.5 rounded-lg transition ${isEditingGroups ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100'}`}
+            title="Gestisci Gruppi"
+          >
+            {isEditingGroups ? <Check className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
+          </button>
+        </div>
+        <div className={`p-2 flex gap-2 no-scrollbar overflow-x-auto ${isEditingGroups ? 'flex-col' : 'flex-row xl:grid xl:grid-cols-4'}`}>
+          {groups.map((group) => {
+            const isActive = activeGroup?.id === group.id && !isEditingGroups;
+            return (
+              <div key={group.id} className="relative group/btn shrink-0">
+                {isEditingGroups ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      defaultValue={group.name}
+                      onBlur={async (e) => {
+                         if (e.target.value !== group.name && e.target.value.trim() !== '') {
+                           const {error} = await supabase.from('groups').update({name: e.target.value}).eq('id', group.id);
+                           if(!error) { fetchGroups(); if(activeGroup?.id === group.id) setActiveGroup({...activeGroup, name: e.target.value}); }
+                         }
+                      }}
+                      className="w-full px-2 py-1.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                    />
+                    <button 
+                      onClick={async () => {
+                         const {error} = await supabase.from('groups').delete().eq('id', group.id);
+                         if(error) alert("Impossibile eliminare: ci sono allenamenti associati a questo gruppo.");
+                         else fetchGroups();
+                      }}
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setActiveGroup(group)}
+                    className={`w-full min-w-[100px] text-left p-2 rounded-xl transition shrink-0 border relative ${
+                      isActive 
+                      ? 'bg-blue-50 border-blue-200 shadow-sm' 
+                      : 'bg-white border-transparent hover:bg-slate-50 border-slate-100'
+                    }`}
+                  >
+                    <span className={`block font-bold text-xs ${isActive ? 'text-blue-800' : 'text-slate-700'}`}>{group.name}</span>
+                    {isActive && <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-500"></div>}
+                  </button>
+                )}
+              </div>
+            )
+          })}
           
-          {/* Selettore Gruppi dal DB */}
+          {isEditingGroups && (
+            <button
+              onClick={async () => {
+                const {error} = await supabase.from('groups').insert({name: 'Nuovo Gruppo'});
+                if(!error) fetchGroups();
+              }}
+              className="w-full mt-2 py-2 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-bold hover:bg-slate-50 hover:text-blue-600 transition flex items-center justify-center"
+            >
+              <Plus className="w-4 h-4 mr-1" /> Aggiungi Gruppo
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden shrink-0">
              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <h3 className="font-bold text-slate-800">Gruppi</h3>
@@ -561,7 +628,8 @@ export default function TrainingPlan() {
                 </button>
               )}
             </div>
-          </div>
+        {/* Colonna Analytics - Spostata in fondo/lato e resa più compatta */}
+        <div className="xl:col-span-1 space-y-6 flex flex-col xl:order-last">
 
           {/* Analytics Panel */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 shadow-blue-900/5">
@@ -646,8 +714,8 @@ export default function TrainingPlan() {
           </div>
         </div>
 
-        {/* Colonna Destra: Builder Interattivo */}
-        <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col lg:min-h-[700px]">
+        {/* Colonna Builder Interattivo - PRIORITÀ ALTA */}
+        <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col xl:order-first lg:min-h-[700px]">
           
           <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50/50 rounded-t-2xl">
              <div>
