@@ -45,7 +45,7 @@ export default function AthletesList() {
         const { data: groupsData } = await supabase
           .from('groups')
           .select('*')
-          .eq('coach_id', currentSession.user.id)
+          .eq('coach_id', coachData.id)
           .order('name');
           
         if (groupsData) setGroups(groupsData);
