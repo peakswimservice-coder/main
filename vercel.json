@@ -1,4 +1,5 @@
 {
+  "buildCommand": "chmod +x ./node_modules/.bin/vite && vite build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
