@@ -21,10 +21,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>('none');
 
-  const detectRole = async (email: string) => {
+  const detectRole = async (email: string, currentSession: Session) => {
     if (email === 'peakswimservice@gmail.com') {
       setUserRole('admin');
       setCurrentView('admin');
+      initializeOneSignal(currentSession.user.id, 'admin');
       return;
     }
 
@@ -38,6 +39,7 @@ function App() {
     if (companyData) {
       setUserRole('company_manager');
       setCurrentView('company_management');
+      initializeOneSignal(currentSession.user.id, 'company_manager');
       return;
     }
 
@@ -51,21 +53,20 @@ function App() {
     if (coachData) {
       setUserRole('coach');
       setCurrentView('dashboard');
+      initializeOneSignal(currentSession.user.id, 'coach');
       return;
     }
 
     setUserRole('none');
+    initializeOneSignal(currentSession.user.id, 'none');
   };
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user?.id) {
-        initializeOneSignal(session.user.id);
-      }
       if (session?.user?.email) {
-        detectRole(session.user.email).then(() => setLoading(false));
+        detectRole(session.user.email, session).then(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -74,11 +75,8 @@ function App() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user?.id) {
-        initializeOneSignal(session.user.id);
-      }
       if (session?.user?.email) {
-        detectRole(session.user.email);
+        detectRole(session.user.email, session);
       }
     });
 

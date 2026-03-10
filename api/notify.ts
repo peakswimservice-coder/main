@@ -14,7 +14,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const postData = JSON.stringify({
     app_id: String(APP_ID),
-    included_segments: ["All"],
+    filters: [
+      { field: "tag", key: "role", relation: "=", value: "coach" }
+    ],
     headings: { 
       it: "PeakSwim: Nuovo Allenamento",
       en: "PeakSwim: New Training" 
