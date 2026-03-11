@@ -201,11 +201,13 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           </button>
           <div className="flex flex-col text-[10px] text-slate-400 font-mono leading-tight bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 min-w-[70px]">
             <span className="font-bold text-[8px]">APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
+            <span className="text-[8px]">USR: {userIdPrefix}</span>
+            {userRole === 'coach' && <span className="text-[8px]">CID: {coachIdPrefix}</span>}
             <span className={`font-black ${isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}`}>
               {isOneSignalInitialized() ? 'OK' : (getOneSignalLastError() ? 'ERR!' : 'WAIT')}
             </span>
             {getOneSignalLastError() && (
-              <span className="text-[8px] text-red-500 truncate max-w-[60px]">{getOneSignalLastError()}</span>
+              <span className="text-[7px] text-red-500 truncate max-w-[60px]">{getOneSignalLastError()}</span>
             )}
           </div>
           <button 

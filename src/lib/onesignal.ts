@@ -5,16 +5,20 @@ const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || (import.meta a
 
 let isInitialized = false;
 let lastError: string | null = null;
+let initPromise: Promise<void> | null = null;
 
 export const isOneSignalInitialized = () => isInitialized;
 export const getOneSignalLastError = () => lastError;
 
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
-  if (!ONESIGNAL_APP_ID) {
-    lastError = "APP_ID_MISSING";
-    console.error("OS_DEBUG: Impossibile inizializzare OneSignal: ONESIGNAL_APP_ID mancante.");
-    return;
-  }
+  if (initPromise) return initPromise;
+  
+  initPromise = (async () => {
+    if (!ONESIGNAL_APP_ID) {
+      lastError = "APP_ID_MISSING";
+      console.error("OS_DEBUG: Impossibile inizializzare OneSignal: ONESIGNAL_APP_ID mancante.");
+      return;
+    }
   
   const OS: any = OneSignal;
 
@@ -121,7 +125,13 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
   } catch (error: any) {
     lastError = error?.message || "INIT_FAILED";
     console.error("OS_DEBUG: Errore inizializzazione:", error);
+  } finally {
+    // Reset promise so it can be retried if it failed
+    if (!isInitialized) initPromise = null;
   }
+  })();
+  
+  return initPromise;
 };
 
 export const getOneSignalSubscriptionState = async (): Promise<boolean> => {
