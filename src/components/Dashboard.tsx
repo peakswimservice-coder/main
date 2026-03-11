@@ -138,7 +138,6 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
        doc.setTextColor(15, 23, 42); 
        const dateDisplay = format(new Date(), "EEEE, d MMMM yyyy", { locale: it });
        doc.text(`Data: ${dateDisplay.charAt(0).toUpperCase() + dateDisplay.slice(1)}`, margin, y);
-       if (session.distance_km) doc.text(`Km: ${session.distance_km}`, pageWidth - margin - 20, y);
        y += 6;
        doc.text(`Gruppo: ${session.groups?.name || ''}`, margin, y);
        y += 6;
@@ -369,9 +368,6 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                         <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${userRole === 'athlete' && athleteGroup?.id === session.group_id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                           {session.groups?.name}
                         </span>
-                        {session.distance_km && (
-                          <span className="text-[10px] font-black text-slate-400">{session.distance_km} KM</span>
-                        )}
                       </div>
                       <h3 className="text-base font-black text-slate-900 leading-tight truncate">
                         {session.content?.split('\n')[0] || 'Allenamento senza titolo'}

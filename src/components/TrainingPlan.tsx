@@ -21,7 +21,6 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
   const [isEditingGroups, setIsEditingGroups] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [content, setContent] = useState('');
-  const [distance, setDistance] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -88,17 +87,15 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
       
       const { data: sessionData } = await supabase
         .from('training_sessions')
-        .select('id, content, distance_km')
+        .select('id, content')
         .eq('group_id', activeGroup.id)
         .eq('date', dateStr)
         .maybeSingle();
 
       if (sessionData) {
         setContent(sessionData.content || '');
-        setDistance(sessionData.distance_km?.toString() || '');
       } else {
         setContent('');
-        setDistance('');
       }
       setIsDirty(false);
     }
@@ -121,7 +118,6 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
           group_id: activeGroup.id, 
           date: dateStr, 
           content,
-          distance_km: distance ? parseFloat(distance.replace(',', '.')) : null,
           duration_minutes: 120 
         }, { onConflict: 'group_id, date' });
 
@@ -209,9 +205,6 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
        const capitalizedDateDisplay = dateDisplay.charAt(0).toUpperCase() + dateDisplay.slice(1);
        
        doc.text(`Data: ${capitalizedDateDisplay}`, margin, y);
-       if (distance) {
-         doc.text(`Km: ${distance}`, pageWidth - margin - 20, y);
-       }
        y += 6;
        doc.text(`Gruppo: ${activeGroup?.name || ''}`, margin, y);
        y += 6;
@@ -254,22 +247,20 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
          }
        });
 
-       // Height Estimation Flow
-       const calculateTotalHeight = (fs: number) => {
-         let currentY = 0;
-         renderedLines.forEach(rl => {
-           if (rl.text === '') {
-             currentY += fs * 0.4;
-             return;
-           }
-           const currentMargin = rl.indent ? leftMargin + indentSize : leftMargin;
-           doc.setFontSize(fs);
-           doc.setFont('helvetica', rl.isBold ? 'bold' : 'normal');
-           const split = doc.splitTextToSize(rl.text, pageWidth - (margin * 2) - (rl.indent ? indentSize : 0));
-           currentY += split.length * (fs * 0.52);
-         });
-         return currentY;
-       };
+        const calculateTotalHeight = (fs: number) => {
+          let currentY = 0;
+          renderedLines.forEach(rl => {
+             if (rl.text === '') {
+               currentY += fs * 0.4;
+               return;
+             }
+             doc.setFontSize(fs);
+             doc.setFont('helvetica', rl.isBold ? 'bold' : 'normal');
+             const split = doc.splitTextToSize(rl.text, pageWidth - (margin * 2) - (rl.indent ? indentSize : 0));
+             currentY += split.length * (fs * 0.52);
+          });
+          return currentY;
+        };
 
        while (fontSize > 6 && calculateTotalHeight(fontSize) > maxRectHeight) {
          fontSize -= 0.5;
@@ -455,24 +446,6 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
           </div>
           
           <div className="flex items-center gap-3 ml-auto">
-            {userRole === 'coach' && (
-              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2 py-1 shadow-sm shrink-0">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1.5">Km:</span>
-                <input 
-                  type="text" 
-                  value={distance}
-                  onChange={(e) => { 
-                    const val = e.target.value.replace(',', '.');
-                    if (/^[0-9.]*$/.test(val)) {
-                      setDistance(e.target.value); 
-                      setIsDirty(true); 
-                    }
-                  }}
-                  placeholder="0.0"
-                  className="w-10 bg-transparent text-sm font-bold text-slate-800 outline-none focus:ring-0 text-center"
-                />
-              </div>
-            )}
             
             <div className="flex items-center gap-1.5 shrink-0">
               <button
