@@ -63,7 +63,7 @@ function App() {
     if (coachData) {
       setUserRole('coach');
       setCurrentView('dashboard');
-      await initializeOneSignal(coachData.id, 'coach');
+      initializeOneSignal(coachData.id, 'coach');
       
       // Update activity
       supabase.from('coaches')
@@ -85,7 +85,7 @@ function App() {
       setUserRole('athlete');
       setAthleteStatus(athleteData.status as AthleteStatus);
       setCurrentView('dashboard');
-      await initializeOneSignal(currentSession.user.id, 'athlete');
+      initializeOneSignal(currentSession.user.id, 'athlete');
       
       // Update activity
       supabase.from('athletes')
@@ -105,7 +105,7 @@ function App() {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       if (initialSession?.user?.email) {
-        detectRole(initialSession.user.email, initialSession).then(() => setLoading(false));
+        detectRole(initialSession.user.email, initialSession).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }

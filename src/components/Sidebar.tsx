@@ -26,12 +26,16 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
       }
     };
 
-    checkSubscription();
-
     const OS: any = OneSignal;
-    OS.on('subscriptionChange', (isSubscribed: boolean) => {
-      setIsSubscribed(isSubscribed);
-    });
+    if (OS && typeof OS.isPushNotificationsEnabled === 'function') {
+      checkSubscription();
+    }
+
+    if (OS && typeof OS.on === 'function') {
+      OS.on('subscriptionChange', (isSubscribed: boolean) => {
+        setIsSubscribed(isSubscribed);
+      });
+    }
   }, []);
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },
