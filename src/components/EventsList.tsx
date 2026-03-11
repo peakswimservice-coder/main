@@ -36,17 +36,25 @@ const events = [
   }
 ];
 
-export default function EventsList() {
+interface EventsListProps {
+  userRole?: 'admin' | 'company_manager' | 'coach' | 'athlete' | 'none';
+}
+
+export default function EventsList({ userRole = 'coach' }: EventsListProps) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-500">
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Calendario Gare ed Eventi</h1>
-          <p className="text-slate-500 mt-1">Gestisci la programmazione competitiva e collega i risultati.</p>
+          <p className="text-slate-500 mt-1">
+            {userRole === 'athlete' ? 'Visualizza il calendario delle gare e degli eventi.' : 'Gestisci la programmazione competitiva e collega i risultati.'}
+          </p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm">
-          <Plus className="w-5 h-5 mr-2" /> Nuovo Evento
-        </button>
+        {userRole === 'coach' && (
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm">
+            <Plus className="w-5 h-5 mr-2" /> Nuovo Evento
+          </button>
+        )}
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,8 +97,15 @@ export default function EventsList() {
                   Vedi Risultati <ExternalLink className="w-4 h-4 ml-2" />
                 </a>
               ) : (
-                <button className="mt-auto w-full py-2.5 bg-white text-blue-600 font-bold text-sm rounded-xl border-2 border-slate-200 hover:border-blue-500 transition flex items-center justify-center">
-                  Gestisci Iscrizioni
+                <button 
+                  disabled={userRole === 'athlete'}
+                  className={`mt-auto w-full py-2.5 font-bold text-sm rounded-xl border-2 transition flex items-center justify-center ${
+                    userRole === 'athlete' 
+                    ? 'bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed' 
+                    : 'bg-white text-blue-600 border-slate-200 hover:border-blue-500'
+                  }`}
+                >
+                  {userRole === 'athlete' ? 'Dettagli Gara' : 'Gestisci Iscrizioni'}
                 </button>
               )}
             </div>

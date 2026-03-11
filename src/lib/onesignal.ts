@@ -3,9 +3,19 @@ import { supabase } from '../supabaseClient';
 
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID; 
 
+let isInitialized = false;
+
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
   if (!ONESIGNAL_APP_ID) {
     console.error("OS_DEBUG: ONESIGNAL_APP_ID non trovato");
+    return;
+  }
+
+  if (isInitialized) {
+    const OS: any = OneSignal;
+    await OS.setExternalUserId(userId);
+    await OS.sendTag("role", role);
+    console.log(`OS_DEBUG: Tag aggiornati per ${userId}: ${role}`);
     return;
   }
 
@@ -20,10 +30,14 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
       welcomeNotification: { disable: true }
     });
 
+    isInitialized = true;
+
     // Registra l'utente esterno e il ruolo
     await OS.setExternalUserId(userId);
     await OS.sendTag("role", role);
-    console.log(`OS_DEBUG: Utente ${userId} registrato con ruolo: ${role}`);
+    
+    const isPushEnabled = await OS.isPushNotificationsEnabled();
+    console.log(`OS_DEBUG: Inizializzato. Utente: ${userId}, Ruolo: ${role}, Sottoscritto: ${isPushEnabled}`);
     
     const playerId = await OS.getUserId();
     if (playerId) {

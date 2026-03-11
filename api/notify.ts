@@ -33,11 +33,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     notificationPayload.data = { type, status };
   }
   else {
-    // Default: Nuovo Allenamento (Broadcast o per ora role=coach per test)
+    // Default: Nuovo Allenamento. Target: Coach (per test, come richiesto dall'utente)
     notificationPayload.filters = [{ field: "tag", key: "role", relation: "=", value: "coach" }];
     notificationPayload.headings.it = "PeakSwim: Nuovo Allenamento";
-    notificationPayload.contents.it = `Nuovo allenamento disponibile per il gruppo ${groupName || ''}! (${date})`;
+    notificationPayload.contents.it = `Nuovo allenamento pronto per il gruppo ${groupName || ''}! (${date})`;
     notificationPayload.data = { groupId, date };
+    console.log(`OS_DEBUG: Invio notifica "Nuovo Allenamento" ai coach.`);
   }
 
   const postData = JSON.stringify(notificationPayload);

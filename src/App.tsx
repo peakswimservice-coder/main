@@ -43,6 +43,13 @@ function App() {
       setUserRole('company_manager');
       setCurrentView('company_management');
       initializeOneSignal(currentSession.user.id, 'company_manager');
+      
+      // Update activity
+      supabase.from('companies')
+        .update({ account_manager_last_active_at: new Date().toISOString() })
+        .eq('account_manager_email', email)
+        .then();
+      
       return;
     }
 
@@ -56,7 +63,14 @@ function App() {
     if (coachData) {
       setUserRole('coach');
       setCurrentView('dashboard');
-      initializeOneSignal(currentSession.user.id, 'coach');
+      await initializeOneSignal(currentSession.user.id, 'coach');
+      
+      // Update activity
+      supabase.from('coaches')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('email', email)
+        .then();
+        
       return;
     }
 
@@ -71,7 +85,14 @@ function App() {
       setUserRole('athlete');
       setAthleteStatus(athleteData.status as AthleteStatus);
       setCurrentView('dashboard');
-      initializeOneSignal(currentSession.user.id, 'athlete');
+      await initializeOneSignal(currentSession.user.id, 'athlete');
+      
+      // Update activity
+      supabase.from('athletes')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', currentSession.user.id)
+        .then();
+        
       return;
     }
 
@@ -141,10 +162,10 @@ function App() {
           <>
             {athleteStatus === 'active' && (
               <>
-                {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} />}
+                {currentView === 'dashboard' && <Dashboard setCurrentView={setCurrentView} userRole={userRole} userId={session.user.id} />}
                 {currentView === 'training' && <TrainingPlan userRole={userRole} userId={session.user.id} />}
-                {currentView === 'events' && <EventsList />}
-                {currentView === 'messages' && <Messages />}
+                {currentView === 'events' && <EventsList userRole={userRole} />}
+                {currentView === 'messages' && <Messages userRole={userRole} />}
               </>
             )}
             

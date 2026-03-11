@@ -36,17 +36,26 @@ ALTER TABLE athletes ENABLE ROW LEVEL SECURITY;
 
 -- Policy per athletes
 -- 1. L'atleta può vedere il proprio profilo
+DROP POLICY IF EXISTS "athletes_self_select" ON athletes;
 CREATE POLICY "athletes_self_select" ON athletes
 FOR SELECT TO authenticated
 USING (auth.uid() = id);
 
--- 2. L'atleta può aggiornare il proprio profilo (es. inserire coach_id all'inizio)
+-- 2. L'atleta può inserire il proprio profilo iniziale
+DROP POLICY IF EXISTS "athletes_self_insert" ON athletes;
+CREATE POLICY "athletes_self_insert" ON athletes
+FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = id);
+
+-- 3. L'atleta può aggiornare il proprio profilo
+DROP POLICY IF EXISTS "athletes_self_update" ON athletes;
 CREATE POLICY "athletes_self_update" ON athletes
 FOR UPDATE TO authenticated
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- 3. Il Coach può vedere/gestire i propri atleti
+-- 4. Il Coach può vedere/gestire i propri atleti
+DROP POLICY IF EXISTS "coach_manage_athletes" ON athletes;
 CREATE POLICY "coach_manage_athletes" ON athletes
 FOR ALL TO authenticated
 USING (
@@ -65,6 +74,7 @@ WITH CHECK (
 );
 
 -- Policy per coaches (permettere agli atleti di trovare il coach dal codice)
+DROP POLICY IF EXISTS "allow_athletes_to_find_coach_by_code" ON coaches;
 CREATE POLICY "allow_athletes_to_find_coach_by_code" ON coaches
 FOR SELECT TO authenticated
 USING (true);

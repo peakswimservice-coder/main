@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Users, Plus, Trash2, Mail, Building2, Check, X } from 'lucide-react';
+import { Users, Plus, Trash2, Mail, Building2, Check, X, ChevronRight, ChevronDown, Clock, UserCheck } from 'lucide-react';
 
 interface Coach {
   id: string;
   email: string;
   full_name: string | null;
   company_id: string;
+  last_active_at: string | null;
+  athlete_count?: number;
+}
+
+interface Athlete {
+  id: string;
+  email: string;
+  full_name: string | null;
+  status: string;
+  last_active_at: string | null;
 }
 
 interface Company {
@@ -24,6 +34,9 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
   const [newName, setNewName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [coachAthletes, setCoachAthletes] = useState<Record<string, Athlete[]>>({});
+  const [loadingAthletes, setLoadingAthletes] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,18 +53,47 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
     } else if (companyData) {
       setCompany(companyData);
       
-      // 2. Prendi gli allenatori di quella società
+      // 2. Prendi gli allenatori di quella società con il conteggio degli atleti
       const { data: coachesData, error: coachesError } = await supabase
         .from('coaches')
-        .select('*')
+        .select('*, athletes(count)')
         .eq('company_id', companyData.id)
         .order('email');
         
       if (!coachesError && coachesData) {
-        setCoaches(coachesData);
+        const formattedData = coachesData.map((c: any) => ({
+          ...c,
+          athlete_count: c.athletes?.[0]?.count || 0
+        }));
+        setCoaches(formattedData);
       }
     }
     setLoading(false);
+  };
+
+  const fetchAthletesForCoach = async (coachId: string) => {
+    if (coachAthletes[coachId]) return;
+    
+    setLoadingAthletes(coachId);
+    const { data, error } = await supabase
+      .from('athletes')
+      .select('id, email, full_name, status, last_active_at')
+      .eq('coach_id', coachId)
+      .order('full_name');
+    
+    if (!error && data) {
+      setCoachAthletes(prev => ({ ...prev, [coachId]: data }));
+    }
+    setLoadingAthletes(null);
+  };
+
+  const toggleExpand = (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      fetchAthletesForCoach(id);
+    }
   };
 
   useEffect(() => {
@@ -195,32 +237,51 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
             <p className="text-slate-400 text-sm">Usa il pulsante in alto per aggiungere il primo membro del team.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                  <th className="px-6 py-4">Allenatore</th>
-                  <th className="px-6 py-4 text-right">Azioni</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {coaches.map((coach) => (
-                  <tr key={coach.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">
-                          {coach.full_name?.[0].toUpperCase() || coach.email[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-800">{coach.full_name || 'Allenatore Senza Nome'}</p>
-                          <p className="text-sm text-slate-500">{coach.email}</p>
-                        </div>
+          <div className="divide-y divide-slate-100">
+            {coaches.map((coach) => (
+              <div key={coach.id} className="group transition-all">
+                {/* Coach Header Row */}
+                <div 
+                  className={`px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition cursor-pointer ${expandedId === coach.id ? 'bg-slate-50 border-l-4 border-blue-500' : ''}`}
+                  onClick={() => toggleExpand(coach.id)}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="p-1 rounded-lg bg-white border border-slate-100 text-slate-400 group-hover:text-blue-500 transition">
+                      {expandedId === coach.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                        {coach.full_name?.[0].toUpperCase() || coach.email[0].toUpperCase()}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-800">{coach.full_name || 'Allenatore Senza Nome'}</p>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider border border-blue-100">
+                            {coach.athlete_count} ATLETI
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500">{coach.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    {coach.last_active_at && (
+                      <div className="hidden md:flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Ultimo Accesso
+                        </span>
+                        <span className="text-xs font-bold text-slate-600">
+                          {new Date(coach.last_active_at).toLocaleString('it-IT')}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center">
                       {confirmingDeleteId === coach.id ? (
-                        <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                          <span className="text-xs font-bold text-red-500">Confermi la rimozione?</span>
+                        <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2 duration-300" onClick={e => e.stopPropagation()}>
+                          <span className="text-xs font-bold text-red-500">Rimuovi?</span>
                           <button
                             onClick={() => handleDeleteCoach(coach.id)}
                             className="p-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
@@ -236,18 +297,70 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
                         </div>
                       ) : (
                         <button
-                          onClick={() => setConfirmingDeleteId(coach.id)}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmingDeleteId(coach.id);
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100 rounded-lg transition-all"
                           title="Rimuovi accesso"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Collapsible Content: Athlete List */}
+                {expandedId === coach.id && (
+                  <div className="bg-slate-50/50 border-t border-slate-100 px-16 py-6 animate-in slide-in-from-top-2 duration-300">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center">
+                      <Users className="w-3 h-3 mr-1.5" />
+                      Atleti in carico ({coach.athlete_count})
+                    </h3>
+                    
+                    {loadingAthletes === coach.id ? (
+                      <div className="text-xs text-slate-400 italic py-2">Caricamento atleti...</div>
+                    ) : (coachAthletes[coach.id]?.length || 0) === 0 ? (
+                      <div className="text-sm text-slate-400 italic py-4 bg-white border border-dashed border-slate-200 rounded-xl text-center">
+                        Nessun atleta associato a questo coach.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {coachAthletes[coach.id].map(athlete => (
+                          <div key={athlete.id} className="flex items-center justify-between p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition group/row">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${athlete.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {athlete.full_name?.[0] || athlete.email[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-bold text-slate-700">{athlete.full_name || 'Atleta Senza Nome'}</p>
+                                  {athlete.status === 'active' ? (
+                                    <UserCheck className="w-3 h-3 text-green-500" />
+                                  ) : (
+                                    <Clock className="w-3 h-3 text-amber-500" />
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-400 font-medium">{athlete.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-wider mb-0.5">Ultimo Accesso</p>
+                              <p className="text-[11px] font-bold text-slate-500">
+                                {athlete.last_active_at 
+                                  ? new Date(athlete.last_active_at).toLocaleString('it-IT')
+                                  : 'Nessuna attività'}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

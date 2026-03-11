@@ -24,7 +24,11 @@ const mockMessages = [
   }
 ];
 
-export default function Messages() {
+interface MessagesProps {
+  userRole?: 'admin' | 'company_manager' | 'coach' | 'athlete' | 'none';
+}
+
+export default function Messages({ userRole = 'coach' }: MessagesProps) {
   const [isComposing, setIsComposing] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('all');
 
@@ -33,9 +37,11 @@ export default function Messages() {
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Bacheca Messaggi</h1>
-          <p className="text-slate-500 mt-1">Invia comunicazioni a tutti gli atleti o ai singoli gruppi.</p>
+          <p className="text-slate-500 mt-1">
+            {userRole === 'athlete' ? 'Rimani aggiornato con le comunicazioni della tua squadra.' : 'Invia comunicazioni a tutti gli atleti o ai singoli gruppi.'}
+          </p>
         </div>
-        {!isComposing && (
+        {!isComposing && userRole === 'coach' && (
           <button 
             onClick={() => setIsComposing(true)}
             className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm w-full sm:w-auto"
@@ -106,18 +112,20 @@ export default function Messages() {
                 <p className="text-slate-600 text-sm leading-relaxed">{msg.content}</p>
               </div>
               
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 min-w-[140px] shrink-0 flex flex-col justify-center">
-                <span className="text-xs font-bold text-slate-500 mb-1 flex items-center"><Users className="w-3 h-3 mr-1"/> Destinatari</span>
-                <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded inline-block w-fit mb-3">{msg.recipient}</span>
-                
-                <span className="text-xs font-bold text-slate-500 mb-1 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1 text-green-500"/> Letti</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-green-500 h-full rounded-full" style={{ width: `${(msg.reads / msg.total) * 100}%`}}></div>
+              {userRole === 'coach' && (
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 min-w-[140px] shrink-0 flex flex-col justify-center">
+                  <span className="text-xs font-bold text-slate-500 mb-1 flex items-center"><Users className="w-3 h-3 mr-1"/> Destinatari</span>
+                  <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded inline-block w-fit mb-3">{msg.recipient}</span>
+                  
+                  <span className="text-xs font-bold text-slate-500 mb-1 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1 text-green-500"/> Letti</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-green-500 h-full rounded-full" style={{ width: `${(msg.reads / msg.total) * 100}%`}}></div>
+                    </div>
+                    <span className="text-xs font-bold w-10 text-right text-slate-700">{msg.reads}/{msg.total}</span>
                   </div>
-                  <span className="text-xs font-bold w-10 text-right text-slate-700">{msg.reads}/{msg.total}</span>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         ))}
