@@ -1,4 +1,4 @@
-// OneSignal UI Version: 1.0.3 - Permission Diagnostics
+// OneSignal UI Version: 1.0.4 - Alert Feedback & SubID
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
@@ -17,6 +17,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [userIdPrefix, setUserIdPrefix] = useState('...');
   const [coachIdPrefix, setCoachIdPrefix] = useState('...');
+  const [subIdPrefix, setSubIdPrefix] = useState('N/A');
   const [browserPerm, setBrowserPerm] = useState('...');
 
   useEffect(() => {
@@ -25,6 +26,10 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
     const permInterval = setInterval(() => {
       setBrowserPerm(getNotificationPermission());
+      const OS: any = OneSignal;
+      if (OS?.User?.PushSubscription?.id) {
+        setSubIdPrefix(OS.User.PushSubscription.id.substring(0, 4).toUpperCase());
+      }
     }, 2000);
 
     supabase.auth.getUser().then(({ data }) => {
@@ -114,6 +119,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           <button 
             onClick={async () => {
               console.log("OS_DEBUG: Click su campanella desktop");
+              alert("Click rilevato (PC)");
               if (!isOneSignalInitialized()) {
                 console.log("OS_DEBUG: SDK non pronto, provo a inizializzare prima di forzare...");
                 const { data } = await supabase.auth.getUser();
@@ -133,6 +139,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span>APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
             <span>USR: {userIdPrefix}</span>
             {userRole === 'coach' && <span title="Coach ID">CID: {coachIdPrefix}</span>}
+            <span>SUB: {subIdPrefix}</span>
             <div className="flex items-center gap-1 mt-1">
               <span className={isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}>
                 {isOneSignalInitialized() ? (isSubscribed ? 'STATO_OK' : 'DISATTIVE') : 'WAIT'}
@@ -222,6 +229,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           <button 
             onClick={async () => {
               console.log("OS_DEBUG: Click su campanella mobile");
+              alert("Click rilevato (Mobile)");
               if (!isOneSignalInitialized()) {
                 console.log("OS_DEBUG: Mobile - SDK non pronto, provo inizializzazione manuale...");
                 const { data } = await supabase.auth.getUser();
@@ -239,6 +247,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span className="font-bold text-[8px]">APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
             <span className="text-[8px]">USR: {userIdPrefix}</span>
             {userRole === 'coach' && <span className="text-[8px]">CID: {coachIdPrefix}</span>}
+            <span className="text-[8px]">SUB: {subIdPrefix}</span>
             <span className={`font-black ${isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}`}>
               {isOneSignalInitialized() ? (isSubscribed ? 'OK' : 'OFF') : 'WAIT'}
             </span>
