@@ -1,5 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as https from 'https';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || "",
+  process.env.VITE_SUPABASE_ANON_KEY || ""
+);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -19,13 +25,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   if (type === 'join_request') {
-    notificationPayload.include_external_user_ids = [coachId];
+    notificationPayload.include_external_user_ids = [String(coachId)];
     notificationPayload.headings.it = "Richiesta di iscrizione";
     notificationPayload.contents.it = `${athleteName} vorrebbe unirsi al tuo team!`;
     notificationPayload.data = { type, athleteName };
   } 
   else if (type === 'status_update') {
-    notificationPayload.include_external_user_ids = [athleteId];
+    notificationPayload.include_external_user_ids = [String(athleteId)];
     notificationPayload.headings.it = status === 'active' ? "Richiesta approvata!" : "Richiesta non accettata";
     notificationPayload.contents.it = status === 'active' 
       ? `Il coach ti ha accettato nel gruppo ${groupName || ''}!`
@@ -33,13 +39,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     notificationPayload.data = { type, status };
   }
   else {
-    // Default: Nuovo Allenamento. Target: Coach (per test, come richiesto dall'utente)
-    notificationPayload.filters = [{ field: "tag", key: "role", relation: "=", value: "coach" }];
+    // Default: Nuovo Allenamento. Target: Atleti del gruppo
+    if (!groupId) {
+       return res.status(400).json({ error: 'groupId mancante per notifica allenamento' });
+    }
+
+    // Recupera tutti gli ID degli atleti nel gruppo
+    const { data: athletes, error: athleteError } = await supabase
+      .from('athletes')
+      .select('id')
+      .eq('group_id', groupId)
+      .eq('status', 'active');
+
+    if (athleteError) {
+      console.error("Error fetching group athletes:", athleteError);
+    }
+
+    const athleteIds = (athletes || []).map(a => String(a.id));
+
+    if (athleteIds.length === 0) {
+      console.log(`OS_DEBUG: Nessun atleta trovato per il gruppo ${groupId}`);
+      return res.status(200).json({ message: "Nessun atleta da notificare" });
+    }
+
+    notificationPayload.include_external_user_ids = athleteIds;
     notificationPayload.headings.it = "PeakSwim: Nuovo Allenamento";
     notificationPayload.contents.it = `Nuovo allenamento pronto per il gruppo ${groupName || ''}! (${date})`;
     notificationPayload.data = { groupId, date };
-    console.log(`OS_DEBUG: Invio notifica "Nuovo Allenamento" ai coach.`);
+    console.log(`OS_DEBUG: Invio notifica "Nuovo Allenamento" a ${athleteIds.length} atleti.`);
   }
+
+  console.log("OS_DEBUG: Sending payload to OneSignal:", JSON.stringify(notificationPayload, null, 2));
 
   const postData = JSON.stringify(notificationPayload);
 

@@ -2,6 +2,8 @@ import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOu
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
 import { promptForPushNotifications } from '../lib/onesignal';
+import OneSignal from 'react-onesignal';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   currentView: string;
@@ -11,6 +13,26 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentView, setCurrentView, userEmail, userRole }: SidebarProps) {
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const OS: any = OneSignal;
+        const enabled = await OS.isPushNotificationsEnabled();
+        setIsSubscribed(enabled);
+      } catch (err) {
+        console.error("Error checking OS subscription:", err);
+      }
+    };
+
+    checkSubscription();
+
+    const OS: any = OneSignal;
+    OS.on('subscriptionChange', (isSubscribed: boolean) => {
+      setIsSubscribed(isSubscribed);
+    });
+  }, []);
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },
     { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'], isMock: true },
@@ -38,8 +60,8 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           </div>
           <button 
             onClick={promptForPushNotifications}
-            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-            title="Attiva notifiche"
+            className={`p-2 rounded-xl transition-all ${isSubscribed ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
+            title={isSubscribed ? "Notifiche attive" : "Attiva notifiche"}
           >
             <Bell className="w-5 h-5" />
           </button>
@@ -122,7 +144,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         <div className="flex items-center space-x-2">
           <button 
             onClick={promptForPushNotifications}
-            className="p-2 text-slate-500 hover:text-blue-600 rounded-xl transition-colors"
+            className={`p-2 rounded-xl transition-colors ${isSubscribed ? 'text-emerald-500' : 'text-slate-500'}`}
           >
             <Bell className="w-5 h-5" />
           </button>
