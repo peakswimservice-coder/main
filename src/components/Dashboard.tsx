@@ -23,6 +23,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   // Athlete Gamification
   const [attendance, setAttendance] = useState<any>(null);
   const [attendanceKm, setAttendanceKm] = useState('');
+  const [attendanceSaved, setAttendanceSaved] = useState(false);
   
   // States for approval process
   const [approvingAthlete, setApprovingAthlete] = useState<any>(null);
@@ -163,6 +164,8 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
          }, { onConflict: 'athlete_id, date' });
          
        if (error) throw error;
+       setAttendanceSaved(true);
+       setTimeout(() => setAttendanceSaved(false), 2000);
     } catch (e) {
        console.error("Error saving attendance:", e);
        alert("Errore salvataggio presenza");
@@ -283,7 +286,14 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-500">Presenza Oggi</h3>
-              <div className="bg-blue-100 p-2.5 rounded-xl"><Activity className="w-5 h-5 text-blue-600" /></div>
+              <div className="flex items-center gap-2">
+                {attendanceSaved && (
+                  <span className="text-[10px] font-black text-emerald-500 animate-in fade-in duration-300 flex items-center gap-1">
+                    ✓ Salvato!
+                  </span>
+                )}
+                <div className="bg-blue-100 p-2.5 rounded-xl"><Activity className="w-5 h-5 text-blue-600" /></div>
+              </div>
             </div>
             
             <div className="flex flex-col gap-3 mt-4">
