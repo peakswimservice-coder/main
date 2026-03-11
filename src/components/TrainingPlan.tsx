@@ -64,15 +64,19 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
     fetchGroups();
     
     // Fetch Coach Name
-    if (userRole === 'coach' && userId) {
-      supabase.from('coaches').select('full_name').eq('id', userId).maybeSingle().then(({data}) => {
+    async function fetchCoachInfo() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+      
+      if (userRole === 'coach' && email) {
+        const { data } = await supabase.from('coaches').select('full_name').eq('email', email).maybeSingle();
         if (data?.full_name) setCoachName(data.full_name);
-      });
-    } else if (userRole === 'athlete' && userId) {
-      supabase.from('athletes').select('coach_id, coaches(full_name)').eq('id', userId).maybeSingle().then(({data}: any) => {
+      } else if (userRole === 'athlete' && userId) {
+        const { data } = await supabase.from('athletes').select('coach_id, coaches(full_name)').eq('id', userId).maybeSingle() as any;
         if (data?.coaches?.full_name) setCoachName(data.coaches.full_name);
-      });
+      }
     }
+    fetchCoachInfo();
   }, []);
 
   // 2. Fetch session data when Date or Group changes
@@ -219,28 +223,77 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
        y += 8;
        
        // CONTENT
-       doc.setFont('helvetica', 'normal');
-       // Auto-adjust font size to fit on one page if content is long
+       // Auto-adjust font size to fit on one page
        let fontSize = 10;
+       const leftMargin = margin;
+       const indentSize = 6;
        const maxRectHeight = pageHeight - y - margin;
-       const tempSplit = doc.splitTextToSize(content || '', pageWidth - (margin * 2));
-       const estHeight = tempSplit.length * (fontSize * 0.5); // very rough estimate
        
-       if (estHeight > maxRectHeight) {
-         fontSize = Math.max(7, Math.floor(fontSize * (maxRectHeight / estHeight)));
+       // Regex for keywords: Allenamento, Velocità, Fondo (case-insensitive)
+       const keywordsRegex = /^(Allenamento|Velocità|Fondo)\b/i;
+       
+       // Process content to estimate height and prepare for rendering
+       const lines = content.split('\n');
+       const renderedLines: { text: string; isBold: boolean; indent: boolean }[] = [];
+       
+       lines.forEach(line => {
+         const trimmedLine = line.trim();
+         if (!trimmedLine) {
+           renderedLines.push({ text: '', isBold: false, indent: false });
+           return;
+         }
+         
+         const match = trimmedLine.match(keywordsRegex);
+         if (match) {
+           // Keyword line: Bold, no indent
+           renderedLines.push({ text: trimmedLine, isBold: true, indent: false });
+         } else {
+           // Normal line: Regular, indent
+           renderedLines.push({ text: trimmedLine, isBold: false, indent: true });
+         }
+       });
+
+       // Height Estimation Flow
+       const calculateTotalHeight = (fs: number) => {
+         let currentY = 0;
+         renderedLines.forEach(rl => {
+           if (rl.text === '') {
+             currentY += fs * 0.4;
+             return;
+           }
+           const currentMargin = rl.indent ? leftMargin + indentSize : leftMargin;
+           doc.setFontSize(fs);
+           doc.setFont('helvetica', rl.isBold ? 'bold' : 'normal');
+           const split = doc.splitTextToSize(rl.text, pageWidth - (margin * 2) - (rl.indent ? indentSize : 0));
+           currentY += split.length * (fs * 0.52);
+         });
+         return currentY;
+       };
+
+       while (fontSize > 6 && calculateTotalHeight(fontSize) > maxRectHeight) {
+         fontSize -= 0.5;
        }
        
        doc.setFontSize(fontSize);
        doc.setTextColor(51, 65, 85);
 
-       const splitContent = doc.splitTextToSize(content || 'Nessun allenamento inserito.', pageWidth - (margin * 2));
-       
-       // Single page constraint - just draw until it fills or ends
-       splitContent.forEach((line: string) => {
-         if (y < pageHeight - margin) {
-           doc.text(line, margin, y);
-           y += (fontSize * 0.5) + 1;
+       // Actual Rendering
+       renderedLines.forEach(rl => {
+         if (rl.text === '') {
+           y += fontSize * 0.4;
+           return;
          }
+         
+         const currentMargin = rl.indent ? leftMargin + indentSize : leftMargin;
+         doc.setFont('helvetica', rl.isBold ? 'bold' : 'normal');
+         const split = doc.splitTextToSize(rl.text, pageWidth - (margin * 2) - (rl.indent ? indentSize : 0));
+         
+         split.forEach((textLine: string) => {
+           if (y < pageHeight - margin) {
+             doc.text(textLine, currentMargin, y);
+             y += (fontSize * 0.52);
+           }
+         });
        });
 
        const dateFileStr = format(selectedDate, 'yyMMdd');
