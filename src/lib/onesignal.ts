@@ -10,6 +10,13 @@ let initPromise: Promise<void> | null = null;
 export const isOneSignalInitialized = () => isInitialized;
 export const getOneSignalLastError = () => lastError;
 
+export const getNotificationPermission = (): NotificationPermission | 'unknown' => {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    return (window as any).Notification.permission;
+  }
+  return 'unknown';
+};
+
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
   if (initPromise) return initPromise;
   
@@ -162,7 +169,10 @@ export const promptForPushNotifications = async () => {
       await OS.User.PushSubscription.optIn();
     }
 
-    if (OS.slidedown && typeof OS.slidedown.prompt === 'function') {
+    if (OS.Notifications && typeof OS.Notifications.requestPermission === 'function') {
+      console.log("OS_DEBUG: Richiedo permessi nativi (v16)...");
+      await OS.Notifications.requestPermission();
+    } else if (OS.slidedown && typeof OS.slidedown.prompt === 'function') {
       await OS.slidedown.prompt();
     } else if (typeof OS.showHttpPrompt === 'function') {
       await OS.showHttpPrompt();

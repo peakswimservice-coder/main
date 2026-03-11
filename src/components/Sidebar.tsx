@@ -1,8 +1,8 @@
-// OneSignal UI Version: 1.0.2 - Robust Bell Interaction
+// OneSignal UI Version: 1.0.3 - Permission Diagnostics
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { isOneSignalInitialized, forceRegister, initializeOneSignal } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -17,8 +17,16 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [userIdPrefix, setUserIdPrefix] = useState('...');
   const [coachIdPrefix, setCoachIdPrefix] = useState('...');
+  const [browserPerm, setBrowserPerm] = useState('...');
 
   useEffect(() => {
+    const p = getNotificationPermission();
+    setBrowserPerm(p);
+
+    const permInterval = setInterval(() => {
+      setBrowserPerm(getNotificationPermission());
+    }, 2000);
+
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUserIdPrefix(data.user.id.substring(0, 4).toUpperCase());
     });
@@ -128,6 +136,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
               <span className={isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}>
                 {isOneSignalInitialized() ? (isSubscribed ? 'STATO_OK' : 'DISATTIVE') : 'WAIT'}
               </span>
+              <span className={`text-[7px] px-1 rounded ${browserPerm === 'granted' ? 'bg-emerald-100 text-emerald-700' : (browserPerm === 'denied' ? 'bg-red-100 text-red-700 font-bold' : 'bg-slate-100 text-slate-500')}`}>
+                {browserPerm?.toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
@@ -229,6 +240,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             {userRole === 'coach' && <span className="text-[8px]">CID: {coachIdPrefix}</span>}
             <span className={`font-black ${isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}`}>
               {isOneSignalInitialized() ? (isSubscribed ? 'OK' : 'OFF') : 'WAIT'}
+            </span>
+            <span className={`text-[7px] px-1 rounded self-start ${browserPerm === 'granted' ? 'bg-emerald-100 text-emerald-700' : (browserPerm === 'denied' ? 'bg-red-100 text-red-700 font-bold' : 'bg-slate-100 text-slate-500')}`}>
+              {browserPerm?.toUpperCase()}
             </span>
           </div>
           <button 
