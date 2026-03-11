@@ -14,8 +14,13 @@ interface SidebarProps {
 
 export default function Sidebar({ currentView, setCurrentView, userEmail, userRole }: SidebarProps) {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [userIdPrefix, setUserIdPrefix] = useState('...');
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserIdPrefix(data.user.id.substring(0, 4).toUpperCase());
+    });
+
     let checkInterval: any;
     let attempts = 0;
 
@@ -93,7 +98,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           </button>
           <div className="flex flex-col text-[8px] text-slate-400 font-mono leading-tight ml-1">
             <span>APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
-            <span>USR: {supabase.auth.getUser().then(({data}) => data.user?.id.substring(0, 4)) && '...'}</span>
+            <span>USR: {userIdPrefix}</span>
             <span className={isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}>
               {isOneSignalInitialized() ? 'INIT_OK' : (getOneSignalLastError() ? `ERR: ${getOneSignalLastError()?.substring(0, 8)}` : 'WAIT_INIT')}
             </span>
