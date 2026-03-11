@@ -113,7 +113,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   }, [userRole, userEmail]);
 
   const allNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'] },
     { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'] },
     { id: 'training', label: 'Allenamenti', icon: Activity, roles: ['coach', 'athlete'] },
     { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach', 'athlete'], isMock: true },
