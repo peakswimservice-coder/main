@@ -142,6 +142,7 @@ export default function AthletesList() {
   const handleRemoveAthlete = async (athleteId: string) => {
     if (!confirm('Sei sicuro di voler rimuovere questo atleta? Dovrà inserire nuovamente il codice invito per rientrare.')) return;
 
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('athletes')
@@ -149,10 +150,14 @@ export default function AthletesList() {
         .eq('id', athleteId);
 
       if (error) throw error;
-      if (session) fetchData(session);
+      
+      setShowOptionsId(null);
+      if (session) await fetchData(session);
     } catch (err) {
       console.error('Errore durante la rimozione:', err);
       alert('Errore durante la rimozione.');
+    } finally {
+      setLoading(false);
     }
   };
 

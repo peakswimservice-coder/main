@@ -63,7 +63,7 @@ function App() {
     if (coachData) {
       setUserRole('coach');
       setCurrentView('dashboard');
-      await initializeOneSignal(currentSession.user.id, 'coach');
+      await initializeOneSignal(coachData.id, 'coach');
       
       // Update activity
       supabase.from('coaches')

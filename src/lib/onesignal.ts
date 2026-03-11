@@ -44,6 +44,11 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
       await syncPlayerId(userId, playerId);
     }
 
+    // Proactive prompt for real users
+    if (role !== 'none') {
+      await promptForPushNotifications();
+    }
+
     OS.on('subscriptionChange', async (isSubscribed: boolean) => {
       if (isSubscribed) {
         const newPlayerId = await OS.getUserId();
@@ -61,14 +66,8 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
 export const promptForPushNotifications = async () => {
   try {
     const OS: any = OneSignal;
-    const isSubscribed = await OS.isPushNotificationsEnabled();
-    
-    if (isSubscribed) {
-      console.log("OS_DEBUG: Già sottoscritto.");
-      return;
-    }
-
-    await OS.showNativePrompt();
+    console.log("OS_DEBUG: Mostrando prompt slidedown...");
+    await OS.slidedown.prompt();
   } catch (error) {
     console.error("OS_DEBUG: Errore prompt:", error);
   }

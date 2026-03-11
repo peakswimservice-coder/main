@@ -51,13 +51,13 @@ export default function AthleteOnboarding({ userId, email, fullName, onComplete 
       // 1. Crea l'atleta nel database
       const { error: joinError } = await supabase
         .from('athletes')
-        .insert({
+        .upsert({
           id: userId,
           email: email,
           full_name: fullName,
           coach_id: coach.id,
           status: 'pending'
-        });
+        }, { onConflict: 'id' });
 
       if (joinError) throw joinError;
 
