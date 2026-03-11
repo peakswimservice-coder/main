@@ -188,38 +188,35 @@ export const promptForPushNotifications = async () => {
 
 export const forceRegister = async () => {
   console.log("OS_DEBUG: forceRegister chiamato");
+  alert("Riparazione avviata...");
   try {
     const OS: any = OneSignal;
     if (!isInitialized) {
-      console.warn("OS_DEBUG: forceRegister abortito - non inizializzato");
+      alert("Errore: SDK non inizializzato. Riprovo ad inizializzare...");
       return;
     }
     
-    console.log("OS_DEBUG: Forzatura registrazione in corso...");
-    
-    // Prova a disiscrivere e re-iscrivere
-    try {
-      if (OS.User && OS.User.PushSubscription) {
-        if (typeof OS.User.PushSubscription.optOut === 'function') {
-          console.log("OS_DEBUG: Eseguo optOut...");
-          await OS.User.PushSubscription.optOut();
-        }
-        if (typeof OS.User.PushSubscription.optIn === 'function') {
-          console.log("OS_DEBUG: Eseguo optIn...");
-          await OS.User.PushSubscription.optIn();
-        }
-      } else if (typeof OS.setSubscription === 'function') {
-        console.log("OS_DEBUG: Eseguo setSubscription(false/true)...");
-        await OS.setSubscription(false);
-        await OS.setSubscription(true);
+    // In v16, optIn è fondamentale se i permessi sono già Granted
+    if (OS.User && OS.User.PushSubscription) {
+      console.log("OS_DEBUG: Forzo optIn su v16...");
+      if (typeof OS.User.PushSubscription.optIn === 'function') {
+        await OS.User.PushSubscription.optIn();
       }
-    } catch (apiErr) {
-      console.warn("OS_DEBUG: Errore durante optOut/optIn (ignorabile):", apiErr);
     }
-    
+
+    // Se non basta, proviamo il prompt di sistema/slidedown
     await promptForPushNotifications();
+    
+    // Check finale dopo 2 secondi
+    setTimeout(async () => {
+      const enabled = await getOneSignalSubscriptionState();
+      if (enabled) alert("Successo! Notifiche attivate.");
+      else alert("Ancora disattive. Verifica se il browser blocca ancora OneSignal.");
+    }, 2000);
+
   } catch (e) {
     console.error("OS_DEBUG: Errore critico forceRegister:", e);
+    alert("Errore durante la riparazione: " + (e as any).message);
   }
 };
 
