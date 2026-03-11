@@ -16,26 +16,48 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
+    let checkInterval: any;
+    let attempts = 0;
+
     const checkSubscription = async () => {
       try {
         const OS: any = OneSignal;
-        const enabled = await OS.isPushNotificationsEnabled();
-        setIsSubscribed(enabled);
+        if (OS && typeof OS.isPushNotificationsEnabled === 'function') {
+          const enabled = await OS.isPushNotificationsEnabled();
+          setIsSubscribed(enabled);
+          console.log("OS_DEBUG: Stato sottoscrizione rilevato:", enabled);
+          
+          // Se siamo qui, l'SDK è pronto, possiamo fermare il polling
+          if (checkInterval) clearInterval(checkInterval);
+
+          // Attacchiamo il listener una volta sola quando l'SDK è pronto
+          OS.on('subscriptionChange', (isSubscribed: boolean) => {
+            console.log("OS_DEBUG: Cambio sottoscrizione:", isSubscribed);
+            setIsSubscribed(isSubscribed);
+          });
+        }
       } catch (err) {
-        console.error("Error checking OS subscription:", err);
+        console.error("OS_DEBUG: Errore durante il check sottoscrizione:", err);
       }
     };
 
-    const OS: any = OneSignal;
-    if (OS && typeof OS.isPushNotificationsEnabled === 'function') {
-      checkSubscription();
-    }
+    // Primo tentativo immediato
+    checkSubscription();
 
-    if (OS && typeof OS.on === 'function') {
-      OS.on('subscriptionChange', (isSubscribed: boolean) => {
-        setIsSubscribed(isSubscribed);
-      });
-    }
+    // Polling ogni 2 secondi per massimo 10 volte se non è ancora pronto
+    checkInterval = setInterval(() => {
+      attempts++;
+      if (attempts > 10) {
+        clearInterval(checkInterval);
+        console.warn("OS_DEBUG: Timeout inizializzazione OneSignal per Sidebar");
+        return;
+      }
+      checkSubscription();
+    }, 2000);
+
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
   }, []);
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },

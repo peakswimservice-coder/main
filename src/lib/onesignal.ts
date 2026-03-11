@@ -5,6 +5,8 @@ const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID;
 
 let isInitialized = false;
 
+export const isOneSignalInitialized = () => isInitialized;
+
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
   if (!ONESIGNAL_APP_ID) {
     console.error("OS_DEBUG: ONESIGNAL_APP_ID non trovato");
@@ -63,11 +65,30 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
   }
 };
 
+export const getOneSignalSubscriptionState = async (): Promise<boolean> => {
+  try {
+    if (!isInitialized) return false;
+    const OS: any = OneSignal;
+    return await OS.isPushNotificationsEnabled();
+  } catch (e) {
+    return false;
+  }
+};
+
 export const promptForPushNotifications = async () => {
   try {
     const OS: any = OneSignal;
-    console.log("OS_DEBUG: Mostrando prompt slidedown...");
+    if (!isInitialized) {
+      console.warn("OS_DEBUG: Prompt ignorato, SDK non ancora inizializzato");
+      return;
+    }
+    
+    console.log("OS_DEBUG: Tentativo di mostrare prompt slidedown...");
+    // Try slidedown first
     await OS.slidedown.prompt();
+    
+    // Fallback logic could be added here if we detect it didn't show, 
+    // but usually OneSignal handles the logic of whether to show it (already denied etc)
   } catch (error) {
     console.error("OS_DEBUG: Errore prompt:", error);
   }
