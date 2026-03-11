@@ -1,4 +1,4 @@
-// OneSignal UI Version: 1.0.6 - Fixed Syntax & Logic
+// OneSignal UI Version: 1.0.6 - Full Structural Fix
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
@@ -21,17 +21,22 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const [browserPerm, setBrowserPerm] = useState('...');
 
   useEffect(() => {
+    // Permission Polling
     const p = getNotificationPermission();
     setBrowserPerm(p);
 
     const permInterval = setInterval(() => {
       setBrowserPerm(getNotificationPermission());
       const OS: any = OneSignal;
-      if (OS?.User?.PushSubscription?.id) {
-        setSubIdPrefix(OS.User.PushSubscription.id.substring(0, 4).toUpperCase());
+      const sid = OS?.User?.PushSubscription?.id || OS?.getUserId?.() || 'N/A';
+      if (typeof sid === 'string' && sid !== 'N/A') {
+        setSubIdPrefix(sid.substring(0, 4).toUpperCase());
+      } else if (sid instanceof Promise) {
+        sid.then(id => { if (id) setSubIdPrefix(id.substring(0, 4).toUpperCase()); });
       }
     }, 2000);
 
+    // Metadata
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUserIdPrefix(data.user.id.substring(0, 4).toUpperCase());
     });
@@ -54,44 +59,40 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
       try {
         const enabled = await getOneSignalSubscriptionState();
         setIsSubscribed(enabled);
-        console.log("OS_DEBUG: Stato sottoscrizione (helper):", enabled);
         
-        if (isOneSignalInitialized()) {
-          // Se siamo qui e l'SDK è pronto, possiamo fermare il polling di inizializzazione
-          // ma continuiamo a monitorare lo stato se non è attivo
-          if (enabled && checkInterval) clearInterval(checkInterval);
+        if (isOneSignalInitialized() && enabled) {
+          if (checkInterval) clearInterval(checkInterval);
         }
 
         const OS: any = OneSignal;
         if (OS && typeof OS.on === 'function') {
-            console.log("OS_DEBUG: Cambio sottoscrizione:", isSubscribed);
-            setIsSubscribed(isSubscribed);
+          // Attacchiamo il listener se pronto
+          OS.on('subscriptionChange', (newStatus: boolean) => {
+            setIsSubscribed(newStatus);
           });
         }
       } catch (err) {
-        console.error("OS_DEBUG: Errore durante il check sottoscrizione:", err);
+        console.error("OS_DEBUG: checkSubscription error:", err);
       }
     };
 
-    // Primo tentativo immediato
     checkSubscription();
 
-    // Polling ogni 2 secondi per massimo 10 volte se non è ancora pronto
     checkInterval = setInterval(() => {
       attempts++;
-      if (attempts > 10) {
+      if (attempts > 15) {
         clearInterval(checkInterval);
-        console.warn("OS_DEBUG: Timeout inizializzazione OneSignal per Sidebar");
         return;
       }
       checkSubscription();
-    }, 2000);
+    }, 3000);
 
     return () => {
       if (checkInterval) clearInterval(checkInterval);
       clearInterval(permInterval);
     };
-  }, []);
+  }, [userRole, userEmail]);
+
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'], isMock: true },
     { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'], isMock: true },
@@ -119,27 +120,21 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           </div>
           <button 
             onClick={async () => {
-              console.log("OS_DEBUG: Click su campanella desktop");
               alert("Click rilevato (PC)");
               if (!isOneSignalInitialized()) {
-                console.log("OS_DEBUG: SDK non pronto, provo a inizializzare prima di forzare...");
                 const { data } = await supabase.auth.getUser();
-                if (data.user) {
-                  const role = userRole || 'none';
-                  await initializeOneSignal(data.user.id, role);
-                }
+                if (data.user) await initializeOneSignal(data.user.id, userRole);
               }
               await forceRegister();
             }}
             className={`p-2 rounded-xl transition-all ${isSubscribed ? 'text-emerald-500 hover:bg-emerald-50' : 'text-red-500 hover:bg-red-50 animate-pulse'}`}
-            title={isSubscribed ? "Notifiche attive" : "Notifiche non attive - Clicca per attivare/riparare"}
           >
             <Bell className="w-5 h-5" />
           </button>
           <div className="flex flex-col text-[8px] text-slate-400 font-mono leading-tight ml-1">
             <span>APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
             <span>USR: {userIdPrefix}</span>
-            {userRole === 'coach' && <span title="Coach ID">CID: {coachIdPrefix}</span>}
+            {userRole === 'coach' && <span>CID: {coachIdPrefix}</span>}
             <span>SUB: {subIdPrefix}</span>
             <div className="flex items-center gap-1 mt-1">
               <span className={isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}>
@@ -161,9 +156,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                 key={item.id}
                 onClick={() => setCurrentView(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive 
-                    ? 'bg-blue-50 text-blue-700 font-medium shadow-sm' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  isActive ? 'bg-blue-50 text-blue-700 font-medium shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -174,18 +167,12 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         </nav>
 
         <div className="p-4 border-t border-slate-100 flex flex-col space-y-4">
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-medium"
-          >
+          <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-medium">
             <LogOut className="w-5 h-5" />
             <span>Esci</span>
           </button>
-
-          <div className="flex items-center space-x-3 px-4 py-3 bg-slate-50 rounded-xl cursor-default transition-colors">
-            <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
-              {userEmail?.substring(0, 2).toUpperCase() || 'U'}
-            </div>
+          <div className="flex items-center space-x-3 px-4 py-3 bg-slate-50 rounded-xl">
+            <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shrink-0">{userEmail?.substring(0, 2).toUpperCase() || 'U'}</div>
             <div className="text-sm text-left truncate flex-1 min-w-0">
               <p className="font-bold text-slate-800 truncate">{userEmail?.split('@')[0] || 'Utente'}</p>
               <p className="text-slate-500 text-xs font-medium truncate">{userEmail}</p>
@@ -196,24 +183,14 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-1 left-0 right-0 z-50 px-2 lg:px-4 pb-safe pointer-events-none">
-        <div className="bg-white/80 backdrop-blur-lg border border-slate-200 shadow-lg shadow-blue-900/10 rounded-2xl flex justify-around items-center p-1 pointer-events-auto">
+        <div className="bg-white/80 backdrop-blur-lg border border-slate-200 shadow-lg rounded-2xl flex justify-around items-center p-1 pointer-events-auto">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentView(item.id)}
-                className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
-                  isActive ? 'text-blue-600' : 'text-slate-400'
-                }`}
-              >
-                <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-blue-50' : ''}`}>
-                  <Icon className={`w-6 h-6 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
-                </div>
-                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''} ${item.isMock ? 'line-through opacity-60' : ''}`}>
-                  {item.label.split(' ')[0]}
-                </span>
+              <button key={item.id} onClick={() => setCurrentView(item.id)} className={`flex flex-col items-center justify-center flex-1 py-1 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                <div className={`p-1.5 rounded-xl ${isActive ? 'bg-blue-50' : ''}`}><Icon className="w-6 h-6" /></div>
+                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''} ${item.isMock ? 'line-through opacity-60' : ''}`}>{item.label.split(' ')[0]}</span>
               </button>
             );
           })}
@@ -229,14 +206,10 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         <div className="flex items-center space-x-2">
           <button 
             onClick={async () => {
-              console.log("OS_DEBUG: Click su campanella mobile");
               alert("Click rilevato (Mobile)");
               if (!isOneSignalInitialized()) {
-                console.log("OS_DEBUG: Mobile - SDK non pronto, provo inizializzazione manuale...");
                 const { data } = await supabase.auth.getUser();
-                if (data.user) {
-                  await initializeOneSignal(data.user.id, userRole);
-                }
+                if (data.user) await initializeOneSignal(data.user.id, userRole);
               }
               await forceRegister();
             }}
@@ -256,12 +229,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
               {browserPerm?.toUpperCase()}
             </span>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          <button onClick={handleLogout} className="p-2 text-red-500 rounded-xl"><LogOut className="w-5 h-5" /></button>
         </div>
       </div>
     </>
