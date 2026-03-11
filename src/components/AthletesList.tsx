@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Plus, UserPlus, Check, X, Edit2, Trash2 } from 'lucide-react';
+import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2 } from 'lucide-react';
 
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -201,9 +201,6 @@ export default function AthletesList() {
               <span className="font-black tracking-widest text-lg text-blue-600 uppercase">{coach.invite_code}</span>
             </div>
           )}
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition shadow-sm w-full sm:w-auto">
-            <Plus className="w-5 h-5 mr-2" /> Nuovo Atleta
-          </button>
         </div>
       </header>
 
