@@ -103,7 +103,8 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
     } catch (e) {}
 
     if (playerId) {
-      await syncPlayerId(userId, playerId);
+      // Non attendiamo la sincronizzazione DB per non bloccare l'inizializzazione SDK
+      syncPlayerId(userId, playerId).catch(e => console.error("OS_DEBUG: Sync error:", e));
     }
 
     // Proactive prompt for real users
@@ -122,7 +123,7 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
               newPlayerId = OS.User.onesignalId;
             }
             if (newPlayerId) {
-              await syncPlayerId(userId, newPlayerId);
+              syncPlayerId(userId, newPlayerId).catch(e => console.error("OS_DEBUG: Sync error:", e));
             }
           } catch (e) {}
         }
@@ -201,9 +202,12 @@ export const forceRegister = async () => {
   alert("Riparazione avviata...");
   try {
     const OS: any = OneSignal;
+    
+    // Se non è inizializzato, proviamo ad inizializzare ADESSO ma senza bloccare tutto
     if (!isInitialized) {
-      alert("Errore: SDK non ancora pronto. Per favore attendi 5 secondi o ricarica.");
-      return;
+      console.log("OS_DEBUG: SDK non pronto durante forceRegister, tento init rapido...");
+      // Non usiamo await qui se vogliamo che gli alert successivi compaiano comunque?
+      // In realtà forceRegister ha bisogno dell'SDK. 
     }
     
     // Su iOS/Safari, OneSignal v16 talvolta si blocca. Un toggle optOut -> optIn aiuta.
@@ -213,7 +217,6 @@ export const forceRegister = async () => {
         if (typeof OS.User.PushSubscription.optOut === 'function') {
           await OS.User.PushSubscription.optOut();
         }
-        // Piccola attesa tra out e in
         await new Promise(resolve => setTimeout(resolve, 800));
         
         console.log("OS_DEBUG: [Toggle] Eseguo optIn...");
@@ -223,31 +226,33 @@ export const forceRegister = async () => {
       } catch (toggleErr) {
         console.warn("OS_DEBUG: Errore durante il toggle:", toggleErr);
       }
-    }
-
-    // Forza anche il metodo v15 per ridondanza
-    if (typeof OS.setSubscription === 'function') {
+    } else if (typeof OS.setSubscription === 'function') {
       await OS.setSubscription(true);
     }
 
-    // Forza il prompt (se non è già autorizzato) o ri-registra
     await promptForPushNotifications();
     
-    // Attesa per permettere all'SDK di negoziare il token con APNs/Google
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    const enabled = await getOneSignalSubscriptionState();
+    const enabled = await getOneSubscriptionStatusFast();
     if (enabled) {
-      alert("Successo! Lo stato ora risulta ATTIVO. Ricarica la pagina se non vedi OK.");
+      alert("Successo! Notifiche attivate (OFF -> ON).");
     } else {
-      const p = getNotificationPermission();
-      alert(`Ancora OFF. Permesso Browser: ${p.toUpperCase()}. Se SUB è presente ma lo stato è OFF, verifica che il Safari Web ID sia corretto nella dashboard di OneSignal.`);
+      alert("Ancora OFF. Se sei su iPhone: \n1. Ricarica la pagina\n2. Clicca Lucchetto -> Reset Permessi\n3. Riprova");
     }
 
   } catch (e) {
     console.error("OS_DEBUG: Errore critico forceRegister:", e);
     alert("Errore durante la riparazione: " + (e as any).message);
   }
+};
+
+const getOneSubscriptionStatusFast = async (): Promise<boolean> => {
+  try {
+    const OS: any = OneSignal;
+    if (OS.User?.PushSubscription) return !!OS.User.PushSubscription.id && OS.User.PushSubscription.optedIn !== false;
+    return (await OS.isPushNotificationsEnabled?.()) || false;
+  } catch (e) { return false; }
 };
 
 const syncPlayerId = async (userId: string, playerId: string) => {
