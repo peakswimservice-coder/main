@@ -83,6 +83,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
     return () => {
       if (checkInterval) clearInterval(checkInterval);
+      clearInterval(permInterval);
     };
   }, []);
   const allNavItems = [
