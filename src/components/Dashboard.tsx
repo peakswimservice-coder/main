@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X } from 'lucide-react';
+import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity } from 'lucide-react';
 import type { ViewType, UserRole } from '../App';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -20,6 +20,10 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Athlete Gamification
+  const [attendance, setAttendance] = useState<any>(null);
+  const [attendanceKm, setAttendanceKm] = useState('');
+  
   // States for approval process
   const [approvingAthlete, setApprovingAthlete] = useState<any>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
@@ -30,14 +34,32 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
     try {
       const { data: { session: authSession } } = await supabase.auth.getSession();
       const email = authSession?.user?.email;
+      const dateStr = format(new Date(), 'yyyy-MM-dd');
+      let currentAthleteGroup = null;
 
       // 1. Fetch Coach Name/Athlete Group
       if (userRole === 'coach' && email) {
         const { data } = await supabase.from('coaches').select('full_name').eq('email', email).maybeSingle();
         if (data?.full_name) setCoachName(data.full_name);
       } else if (userRole === 'athlete' && userId) {
-        const { data } = await supabase.from('athletes').select('groups(*)').eq('id', userId).maybeSingle();
-        if (data?.groups) setAthleteGroup(data.groups);
+        const { data } = await supabase.from('athletes').select('group_id, groups(*)').eq('id', userId).maybeSingle();
+        if (data?.groups) {
+           setAthleteGroup(data.groups);
+           currentAthleteGroup = data.groups;
+        }
+        
+        // Fetch Attendance for today
+        const { data: attData } = await supabase
+          .from('athlete_attendance')
+          .select('*')
+          .eq('athlete_id', userId)
+          .eq('date', dateStr)
+          .maybeSingle();
+          
+        if (attData) {
+           setAttendance(attData);
+           setAttendanceKm(attData.distance_km?.toString() || '');
+        }
       }
 
       // 2. Fetch Pending Athletes (Coach only)
@@ -59,15 +81,24 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
       }
 
       // 3. Fetch Today's Sessions
-      const dateStr = format(new Date(), 'yyyy-MM-dd');
-      const { data: sessions } = await supabase
+      let query = supabase
         .from('training_sessions')
         .select('*, groups(name)')
         .eq('date', dateStr);
+        
+      if (userRole === 'athlete' && currentAthleteGroup) {
+         query = query.eq('group_id', currentAthleteGroup.id as string);
+      } else if (userRole === 'athlete' && !currentAthleteGroup) {
+         // Se non ha gruppo, non vede allenamenti
+         query = query.eq('id', '00000000-0000-0000-0000-000000000000'); 
+      }
+      
+      const { data: sessions, error } = await query;
+      if (error) {
+        console.error("Error fetching sessions:", error);
+      }
       setTodaySessions(sessions || []);
 
-    } catch (err) {
-      console.error("Dashboard Fetch Error:", err);
     } finally {
       setLoading(false);
     }
@@ -111,6 +142,33 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
       await supabase.from('athletes').update({ status: 'rejected' }).eq('id', athleteId);
       fetchData();
     } catch (err) {}
+  };
+
+  const handleSaveAttendance = async (isPresent: boolean, km: string) => {
+    if (!userId) return;
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    const parsedKm = km ? parseFloat(km.replace(',', '.')) : null;
+    
+    try {
+       // Optimistic Update
+       setAttendance({ ...attendance, is_present: isPresent, distance_km: parsedKm });
+       
+       const { error } = await supabase
+         .from('athlete_attendance')
+         .upsert({
+           athlete_id: userId,
+           date: dateStr,
+           is_present: isPresent,
+           distance_km: parsedKm
+         }, { onConflict: 'athlete_id, date' });
+         
+       if (error) throw error;
+    } catch (e) {
+       console.error("Error saving attendance:", e);
+       alert("Errore salvataggio presenza");
+       // Revert Optimistic Update
+       fetchData();
+    }
   };
 
   const handleSharePdf = async (session: any) => {
@@ -221,18 +279,47 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
 
       {/* Stats Cards - Simplified */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-500">{userRole === 'athlete' ? 'Il tuo Gruppo' : 'Iscritti Totali'}</h3>
-            <div className="bg-blue-100 p-2.5 rounded-xl"><Users className="w-5 h-5 text-blue-600" /></div>
+        {userRole === 'athlete' ? (
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-500">Presenza Oggi</h3>
+              <div className="bg-blue-100 p-2.5 rounded-xl"><Activity className="w-5 h-5 text-blue-600" /></div>
+            </div>
+            
+            <div className="flex flex-col gap-3 mt-4">
+              <label className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition shadow-sm">
+                <input 
+                  type="checkbox" 
+                  checked={attendance?.is_present || false}
+                  onChange={(e) => handleSaveAttendance(e.target.checked, attendanceKm)}
+                  className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 accent-blue-600"
+                />
+                <span className="font-bold text-slate-700">Oggi mi alleno!</span>
+              </label>
+              
+              <div className="flex items-center space-x-3 bg-slate-50 p-2 px-3 rounded-xl border border-slate-100 shadow-sm transition focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400">
+                <span className="font-bold text-slate-500 text-sm flex-1">Km Percorsi:</span>
+                <input 
+                  type="text"
+                  placeholder="0.0"
+                  value={attendanceKm}
+                  onChange={(e) => setAttendanceKm(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onBlur={() => handleSaveAttendance(attendance?.is_present || false, attendanceKm)}
+                  className="w-16 text-center font-black text-slate-800 bg-transparent border-b-2 border-slate-200 focus:border-blue-500 outline-none pb-0.5 transition-colors"
+                />
+              </div>
+            </div>
           </div>
-          <p className="text-4xl font-black text-slate-800">
-            {userRole === 'athlete' ? (athleteGroup?.name || '...') : activeAthletes.length}
-          </p>
-          {userRole === 'athlete' ? (
-             <p className="text-sm text-slate-400 font-medium mt-2">Visibile agli atleti approvati</p>
-          ) : (
-             <div className="mt-4 flex flex-wrap gap-2">
+        ) : (
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-500">Iscritti Totali</h3>
+              <div className="bg-blue-100 p-2.5 rounded-xl"><Users className="w-5 h-5 text-blue-600" /></div>
+            </div>
+            <p className="text-4xl font-black text-slate-800">
+              {activeAthletes.length}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
                {Object.entries(
                  activeAthletes.reduce((acc, a) => {
                    const g = a.groups?.name || 'Senza Gruppo';
@@ -247,9 +334,9 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                {activeAthletes.length === 0 && (
                  <p className="text-sm text-slate-400 font-medium">Nessun atleta approvato</p>
                )}
-             </div>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
         
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
@@ -365,9 +452,11 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${userRole === 'athlete' && athleteGroup?.id === session.group_id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                          {session.groups?.name}
-                        </span>
+                        {userRole === 'coach' && (
+                            <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500">
+                              {session.groups?.name}
+                            </span>
+                        )}
                       </div>
                       <h3 className="text-base font-black text-slate-900 leading-tight truncate">
                         {session.content?.split('\n')[0] || 'Allenamento senza titolo'}

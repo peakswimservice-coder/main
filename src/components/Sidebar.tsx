@@ -95,8 +95,11 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        attempts = 0; // reset tentativi
-        checkSubscription();
+        // Only force re-check if we are NOT already OK
+        if (!isOneSignalInitialized() || !isSubscribed) {
+          attempts = 0; // reset tentativi
+          checkSubscription();
+        }
       }
     };
     
