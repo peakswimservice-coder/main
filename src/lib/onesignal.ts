@@ -15,18 +15,30 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
     console.error("OS_DEBUG: Impossibile inizializzare OneSignal: ONESIGNAL_APP_ID mancante.");
     return;
   }
-  console.log(`OS_DEBUG: Inizializzazione OneSignal con ID: ${ONESIGNAL_APP_ID.substring(0, 5)}...`);
+  
+  const OS: any = OneSignal;
 
   if (isInitialized) {
-    const OS: any = OneSignal;
-    await OS.setExternalUserId(userId);
-    await OS.sendTag("role", role);
-    console.log(`OS_DEBUG: Tag aggiornati per ${userId}: ${role}`);
-    return;
+    try {
+      if (typeof OS.login === 'function') {
+        await OS.login(userId);
+      } else if (typeof OS.setExternalUserId === 'function') {
+        await OS.setExternalUserId(userId);
+      }
+      
+      if (OS.User && typeof OS.User.addTag === 'function') {
+        await OS.User.addTag("role", role);
+      } else if (typeof OS.sendTag === 'function') {
+        await OS.sendTag("role", role);
+      }
+      return;
+    } catch (e) {
+      console.warn("OS_DEBUG: Errore aggiornamento utente:", e);
+    }
   }
 
   try {
-    const OS: any = OneSignal;
+    console.log(`OS_DEBUG: Inizializzazione OneSignal con ID: ${ONESIGNAL_APP_ID.substring(0, 5)}...`);
     
     await OS.init({
       appId: ONESIGNAL_APP_ID,
@@ -38,14 +50,47 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
 
     isInitialized = true;
 
-    // Registra l'utente esterno e il ruolo
-    await OS.setExternalUserId(userId);
-    await OS.sendTag("role", role);
+    // Registra l'utente esterno e il ruolo con compatibilità v15/v16
+    try {
+      if (typeof OS.login === 'function') {
+        await OS.login(userId);
+        console.log("OS_DEBUG: Login effettuato (v16)");
+      } else if (typeof OS.setExternalUserId === 'function') {
+        await OS.setExternalUserId(userId);
+        console.log("OS_DEBUG: External User ID impostato (v15)");
+      }
+
+      if (OS.User && typeof OS.User.addTag === 'function') {
+        await OS.User.addTag("role", role);
+      } else if (typeof OS.sendTag === 'function') {
+        await OS.sendTag("role", role);
+      }
+      console.log(`OS_DEBUG: Tag aggiornati: ${role}`);
+    } catch (apiErr: any) {
+      console.warn("OS_DEBUG: Errore durante l'impostazione di ID/Tags:", apiErr);
+    }
     
-    const isPushEnabled = await OS.isPushNotificationsEnabled();
+    // Check state for debug
+    let isPushEnabled = false;
+    try {
+      if (typeof OS.isPushNotificationsEnabled === 'function') {
+        isPushEnabled = await OS.isPushNotificationsEnabled();
+      } else if (OS.Notifications && typeof OS.Notifications.permission === 'boolean') {
+        isPushEnabled = OS.Notifications.permission;
+      }
+    } catch (e) {}
+    
     console.log(`OS_DEBUG: Inizializzato. Utente: ${userId}, Ruolo: ${role}, Sottoscritto: ${isPushEnabled}`);
     
-    const playerId = await OS.getUserId();
+    let playerId = null;
+    try {
+      if (typeof OS.getUserId === 'function') {
+        playerId = await OS.getUserId();
+      } else if (OS.User && OS.User.onesignalId) {
+        playerId = OS.User.onesignalId;
+      }
+    } catch (e) {}
+
     if (playerId) {
       await syncPlayerId(userId, playerId);
     }
@@ -55,14 +100,23 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
       await promptForPushNotifications();
     }
 
-    OS.on('subscriptionChange', async (isSubscribed: boolean) => {
-      if (isSubscribed) {
-        const newPlayerId = await OS.getUserId();
-        if (newPlayerId) {
-          await syncPlayerId(userId, newPlayerId);
+    if (typeof OS.on === 'function') {
+      OS.on('subscriptionChange', async (isSubscribed: boolean) => {
+        if (isSubscribed) {
+          try {
+            let newPlayerId = null;
+            if (typeof OS.getUserId === 'function') {
+              newPlayerId = await OS.getUserId();
+            } else if (OS.User && OS.User.onesignalId) {
+              newPlayerId = OS.User.onesignalId;
+            }
+            if (newPlayerId) {
+              await syncPlayerId(userId, newPlayerId);
+            }
+          } catch (e) {}
         }
-      }
-    });
+      });
+    }
 
   } catch (error: any) {
     lastError = error?.message || "INIT_FAILED";
@@ -74,7 +128,10 @@ export const getOneSignalSubscriptionState = async (): Promise<boolean> => {
   try {
     if (!isInitialized) return false;
     const OS: any = OneSignal;
-    return await OS.isPushNotificationsEnabled();
+    if (typeof OS.isPushNotificationsEnabled === 'function') {
+      return await OS.isPushNotificationsEnabled();
+    }
+    return false;
   } catch (e) {
     return false;
   }
@@ -89,11 +146,16 @@ export const promptForPushNotifications = async () => {
     }
     
     console.log("OS_DEBUG: Tentativo di mostrare prompt slidedown...");
-    // Try slidedown first
-    await OS.slidedown.prompt();
     
-    // Fallback logic could be added here if we detect it didn't show, 
-    // but usually OneSignal handles the logic of whether to show it (already denied etc)
+    if (OS.slidedown && typeof OS.slidedown.prompt === 'function') {
+      await OS.slidedown.prompt();
+    } else if (typeof OS.showHttpPrompt === 'function') {
+      await OS.showHttpPrompt();
+    } else if (typeof OS.registerForPushNotifications === 'function') {
+      await OS.registerForPushNotifications();
+    } else {
+      console.warn("OS_DEBUG: Nessun metodo di prompt trovato");
+    }
   } catch (error) {
     console.error("OS_DEBUG: Errore prompt:", error);
   }
