@@ -2,6 +2,9 @@ import OneSignal from 'react-onesignal';
 import { supabase } from '../supabaseClient';
 
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID; 
+if (!ONESIGNAL_APP_ID) {
+  console.warn("OS_DEBUG: VITE_ONESIGNAL_APP_ID non trovato nel frontend. Verifica le variabili d'ambiente di Vite.");
+}
 
 let isInitialized = false;
 
@@ -9,9 +12,10 @@ export const isOneSignalInitialized = () => isInitialized;
 
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
   if (!ONESIGNAL_APP_ID) {
-    console.error("OS_DEBUG: ONESIGNAL_APP_ID non trovato");
+    console.error("OS_DEBUG: Impossibile inizializzare OneSignal: ONESIGNAL_APP_ID mancante.");
     return;
   }
+  console.log(`OS_DEBUG: Inizializzazione OneSignal con ID: ${ONESIGNAL_APP_ID.substring(0, 5)}...`);
 
   if (isInitialized) {
     const OS: any = OneSignal;
