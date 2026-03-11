@@ -145,11 +145,21 @@ export const getOneSignalSubscriptionState = async (): Promise<boolean> => {
   try {
     if (!isInitialized) return false;
     const OS: any = OneSignal;
+    
+    // Check v16 state
+    if (OS.User && OS.User.PushSubscription) {
+      const isSubscribed = !!OS.User.PushSubscription.id && OS.User.PushSubscription.optedIn !== false;
+      console.log("OS_DEBUG: Stato v16 rilevato:", isSubscribed, "ID:", OS.User.PushSubscription.id, "OptedIn:", OS.User.PushSubscription.optedIn);
+      return isSubscribed;
+    }
+
+    // Fallback v15
     if (typeof OS.isPushNotificationsEnabled === 'function') {
       return await OS.isPushNotificationsEnabled();
     }
     return false;
   } catch (e) {
+    console.warn("OS_DEBUG: Errore nel recupero dello stato sottoscrizione:", e);
     return false;
   }
 };
@@ -192,27 +202,39 @@ export const forceRegister = async () => {
   try {
     const OS: any = OneSignal;
     if (!isInitialized) {
-      alert("Errore: SDK non inizializzato. Riprovo ad inizializzare...");
+      alert("Errore: SDK non ancora pronto. Per favore attendi 5 secondi o ricarica.");
       return;
     }
     
     // In v16, optIn è fondamentale se i permessi sono già Granted
     if (OS.User && OS.User.PushSubscription) {
-      console.log("OS_DEBUG: Forzo optIn su v16...");
-      if (typeof OS.User.PushSubscription.optIn === 'function') {
-        await OS.User.PushSubscription.optIn();
+      console.log("OS_DEBUG: Forzo optIn e synchronization su v16...");
+      try {
+        if (typeof OS.User.PushSubscription.optIn === 'function') {
+          await OS.User.PushSubscription.optIn();
+        }
+      } catch (e) {
+        console.warn("OS_DEBUG: Errore optIn (ignorabile se already opted-in)");
       }
     }
 
-    // Se non basta, proviamo il prompt di sistema/slidedown
+    // Provo anche il metodo vecchio per sicurezza (non guasta)
+    if (typeof OS.setSubscription === 'function') {
+      await OS.setSubscription(true);
+    }
+
+    // Forza il prompt (se non è già autorizzato) o ri-registra i permessi
     await promptForPushNotifications();
     
-    // Check finale dopo 2 secondi
-    setTimeout(async () => {
-      const enabled = await getOneSignalSubscriptionState();
-      if (enabled) alert("Successo! Notifiche attivate.");
-      else alert("Ancora disattive. Verifica se il browser blocca ancora OneSignal.");
-    }, 2000);
+    // Breve attesa per permettere all'SDK di aggiornare lo stato interno
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const enabled = await getOneSignalSubscriptionState();
+    if (enabled) {
+      alert("Successo! Notifiche attivate. Lo STATO passerà a OK tra pochi secondi.");
+    } else {
+      alert("Lo stato risulta ancora disattivo. Se SUB è presente, prova a cambiare una view nell'app e tornare indietro, o ricaricare (Ctrl+F5).");
+    }
 
   } catch (e) {
     console.error("OS_DEBUG: Errore critico forceRegister:", e);

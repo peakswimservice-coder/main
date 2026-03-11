@@ -1,8 +1,8 @@
-// OneSignal UI Version: 1.0.4 - Alert Feedback & SubID
+// OneSignal UI Version: 1.0.5 - V16 State Helper
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -52,17 +52,18 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
     const checkSubscription = async () => {
       try {
-        const OS: any = OneSignal;
-        if (OS && typeof OS.isPushNotificationsEnabled === 'function') {
-          const enabled = await OS.isPushNotificationsEnabled();
-          setIsSubscribed(enabled);
-          console.log("OS_DEBUG: Stato sottoscrizione rilevato:", enabled);
-          
-          // Se siamo qui, l'SDK è pronto, possiamo fermare il polling
-          if (checkInterval) clearInterval(checkInterval);
+        const enabled = await getOneSignalSubscriptionState();
+        setIsSubscribed(enabled);
+        console.log("OS_DEBUG: Stato sottoscrizione (helper):", enabled);
+        
+        if (isOneSignalInitialized()) {
+          // Se siamo qui e l'SDK è pronto, possiamo fermare il polling di inizializzazione
+          // ma continuiamo a monitorare lo stato se non è attivo
+          if (enabled && checkInterval) clearInterval(checkInterval);
+        }
 
-          // Attacchiamo il listener una volta sola quando l'SDK è pronto
-          OS.on('subscriptionChange', (isSubscribed: boolean) => {
+        const OS: any = OneSignal;
+        if (OS && typeof OS.on === 'function') {
             console.log("OS_DEBUG: Cambio sottoscrizione:", isSubscribed);
             setIsSubscribed(isSubscribed);
           });
