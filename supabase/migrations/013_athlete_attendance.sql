@@ -13,28 +13,32 @@ CREATE TABLE IF NOT EXISTS public.athlete_attendance (
 ALTER TABLE public.athlete_attendance ENABLE ROW LEVEL SECURITY;
 
 -- Athletes can view their own attendance
+-- In this app, the athlete's id IS the auth.uid()
 CREATE POLICY "Athletes can view own attendance" ON public.athlete_attendance
     FOR SELECT USING (
-        athlete_id IN (SELECT id FROM public.athletes WHERE user_id = auth.uid())
+        athlete_id = auth.uid()
     );
 
--- Athletes can insert/update their own attendance
+-- Athletes can insert their own attendance
 CREATE POLICY "Athletes can insert own attendance" ON public.athlete_attendance
     FOR INSERT WITH CHECK (
-        athlete_id IN (SELECT id FROM public.athletes WHERE user_id = auth.uid())
+        athlete_id = auth.uid()
     );
 
+-- Athletes can update their own attendance
 CREATE POLICY "Athletes can update own attendance" ON public.athlete_attendance
     FOR UPDATE USING (
-        athlete_id IN (SELECT id FROM public.athletes WHERE user_id = auth.uid())
+        athlete_id = auth.uid()
     );
 
 -- Coaches can view attendance of athletes assigned to them
+-- Coaches are identified by email matching auth.email()
 CREATE POLICY "Coaches can view team attendance" ON public.athlete_attendance
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.athletes a
+            JOIN public.coaches c ON c.id = a.coach_id
             WHERE a.id = athlete_attendance.athlete_id
-            AND a.coach_id = (SELECT id FROM public.coaches WHERE user_id = auth.uid())
+            AND c.email = auth.email()
         )
     );

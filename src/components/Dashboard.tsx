@@ -287,27 +287,42 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
             </div>
             
             <div className="flex flex-col gap-3 mt-4">
-              <label className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition shadow-sm">
-                <input 
-                  type="checkbox" 
-                  checked={attendance?.is_present || false}
-                  onChange={(e) => handleSaveAttendance(e.target.checked, attendanceKm)}
-                  className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 accent-blue-600"
-                />
-                <span className="font-bold text-slate-700">Oggi mi alleno!</span>
-              </label>
-              
-              <div className="flex items-center space-x-3 bg-slate-50 p-2 px-3 rounded-xl border border-slate-100 shadow-sm transition focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400">
-                <span className="font-bold text-slate-500 text-sm flex-1">Km Percorsi:</span>
-                <input 
-                  type="text"
-                  placeholder="0.0"
-                  value={attendanceKm}
-                  onChange={(e) => setAttendanceKm(e.target.value.replace(/[^\d.,]/g, ''))}
-                  onBlur={() => handleSaveAttendance(attendance?.is_present || false, attendanceKm)}
-                  className="w-16 text-center font-black text-slate-800 bg-transparent border-b-2 border-slate-200 focus:border-blue-500 outline-none pb-0.5 transition-colors"
-                />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSaveAttendance(true, attendanceKm)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-all ${
+                    attendance?.is_present === true
+                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200'
+                      : 'border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600 bg-slate-50'
+                  }`}
+                >
+                  ✓ Ero Presente
+                </button>
+                <button
+                  onClick={() => handleSaveAttendance(false, attendanceKm)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 font-bold text-sm transition-all ${
+                    attendance?.is_present === false && attendance !== null
+                      ? 'bg-red-500 border-red-500 text-white shadow-md shadow-red-200'
+                      : 'border-slate-200 text-slate-500 hover:border-red-300 hover:text-red-500 bg-slate-50'
+                  }`}
+                >
+                  ✗ Ero Assente
+                </button>
               </div>
+              
+              {attendance?.is_present === true && (
+                <div className="flex items-center space-x-3 bg-slate-50 p-2 px-3 rounded-xl border border-slate-100 shadow-sm transition focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400">
+                  <span className="font-bold text-slate-500 text-sm flex-1">Km Percorsi:</span>
+                  <input 
+                    type="text"
+                    placeholder="0.0"
+                    value={attendanceKm}
+                    onChange={(e) => setAttendanceKm(e.target.value.replace(/[^\d.,]/g, ''))}
+                    onBlur={() => handleSaveAttendance(true, attendanceKm)}
+                    className="w-16 text-center font-black text-slate-800 bg-transparent border-b-2 border-slate-200 focus:border-blue-500 outline-none pb-0.5 transition-colors"
+                  />
+                </div>
+              )}
             </div>
           </div>
         ) : (
