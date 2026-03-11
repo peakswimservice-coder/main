@@ -105,7 +105,7 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
           group_id: activeGroup.id, 
           date: dateStr, 
           content,
-          distance_km: distance ? parseFloat(distance) : null,
+          distance_km: distance ? parseFloat(distance.replace(',', '.')) : null,
           duration_minutes: 120 
         }, { onConflict: 'group_id, date' });
 
@@ -369,15 +369,20 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
             </h2>
             
             {userRole === 'coach' && (
-              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm ml-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Km:</span>
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-sm ml-auto sm:ml-4 shrink-0">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1.5">Km:</span>
                 <input 
-                  type="number" 
-                  step="0.1"
+                  type="text" 
                   value={distance}
-                  onChange={(e) => { setDistance(e.target.value); setIsDirty(true); }}
+                  onChange={(e) => { 
+                    const val = e.target.value.replace(',', '.');
+                    if (/^[0-9.]*$/.test(val)) {
+                      setDistance(e.target.value); 
+                      setIsDirty(true); 
+                    }
+                  }}
                   placeholder="0.0"
-                  className="w-16 bg-transparent text-sm font-bold text-slate-800 outline-none focus:ring-0"
+                  className="w-12 bg-transparent text-sm font-bold text-slate-800 outline-none focus:ring-0 text-center"
                 />
               </div>
             )}
