@@ -1,7 +1,7 @@
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { promptForPushNotifications } from '../lib/onesignal';
+import { promptForPushNotifications, isOneSignalInitialized } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -91,6 +91,12 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
           >
             <Bell className="w-5 h-5" />
           </button>
+          <div className="flex flex-col text-[8px] text-slate-400 font-mono leading-tight ml-1">
+            <span>ID: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
+            <span className={isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}>
+              {isOneSignalInitialized() ? 'INIT_OK' : 'WAIT_INIT'}
+            </span>
+          </div>
         </div>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">

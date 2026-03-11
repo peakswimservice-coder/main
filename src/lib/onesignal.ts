@@ -1,9 +1,12 @@
 import OneSignal from 'react-onesignal';
 import { supabase } from '../supabaseClient';
 
-const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID; 
+const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || (import.meta as any).env?.ONESIGNAL_APP_ID; 
+
 if (!ONESIGNAL_APP_ID) {
-  console.warn("OS_DEBUG: VITE_ONESIGNAL_APP_ID non trovato nel frontend. Verifica le variabili d'ambiente di Vite.");
+  console.error("OS_DEBUG: ONESIGNAL_APP_ID NON TROVATO. Assicurati di aver impostato VITE_ONESIGNAL_APP_ID nelle variabili d'ambiente di Vite/Vercel.");
+} else {
+  console.log("OS_DEBUG: ONESIGNAL_APP_ID caricato correttamente.");
 }
 
 let isInitialized = false;
