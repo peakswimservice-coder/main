@@ -94,9 +94,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try { result = JSON.parse(body || '{}'); } catch(e) {}
         
         if (osRes.statusCode && osRes.statusCode >= 200 && osRes.statusCode < 300) {
+          console.log(`OS_DEBUG: OneSignal Success (${osRes.statusCode}):`, body);
           res.status(200).json(result);
         } else {
-          console.error(`OneSignal Error ${osRes.statusCode}:`, body);
+          console.error(`OS_DEBUG: OneSignal Error ${osRes.statusCode}:`, body);
           res.status(osRes.statusCode || 500).json(result);
         }
         resolve(true);
