@@ -3,18 +3,15 @@ import { supabase } from '../supabaseClient';
 
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || (import.meta as any).env?.ONESIGNAL_APP_ID; 
 
-if (!ONESIGNAL_APP_ID) {
-  console.error("OS_DEBUG: ONESIGNAL_APP_ID NON TROVATO. Assicurati di aver impostato VITE_ONESIGNAL_APP_ID nelle variabili d'ambiente di Vite/Vercel.");
-} else {
-  console.log("OS_DEBUG: ONESIGNAL_APP_ID caricato correttamente.");
-}
-
 let isInitialized = false;
+let lastError: string | null = null;
 
 export const isOneSignalInitialized = () => isInitialized;
+export const getOneSignalLastError = () => lastError;
 
 export const initializeOneSignal = async (userId: string, role: string = 'none') => {
   if (!ONESIGNAL_APP_ID) {
+    lastError = "APP_ID_MISSING";
     console.error("OS_DEBUG: Impossibile inizializzare OneSignal: ONESIGNAL_APP_ID mancante.");
     return;
   }
@@ -67,7 +64,8 @@ export const initializeOneSignal = async (userId: string, role: string = 'none')
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    lastError = error?.message || "INIT_FAILED";
     console.error("OS_DEBUG: Errore inizializzazione:", error);
   }
 };
