@@ -14,6 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const APP_ID = (process.env.VITE_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || "").trim();
   const API_KEY = (process.env.VITE_ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_REST_API_KEY || "").trim();
 
+  console.log(`OS_DEBUG: Config - AppID: ${APP_ID.substring(0, 8)}..., Key: ${API_KEY.substring(0, 10)}... (len: ${API_KEY.length})`);
+
   if (!APP_ID || !API_KEY) {
     return res.status(500).json({ error: 'Configurazione OneSignal mancante' });
   }
