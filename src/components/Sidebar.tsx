@@ -1,3 +1,4 @@
+// OneSignal UI Version: 1.0.1 - Integrated Fix Logic
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
