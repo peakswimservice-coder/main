@@ -177,22 +177,39 @@ export const promptForPushNotifications = async () => {
 };
 
 export const forceRegister = async () => {
+  console.log("OS_DEBUG: forceRegister chiamato");
   try {
     const OS: any = OneSignal;
-    if (!isInitialized) return;
+    if (!isInitialized) {
+      console.warn("OS_DEBUG: forceRegister abortito - non inizializzato");
+      return;
+    }
     
-    console.log("OS_DEBUG: Forzatura registrazione...");
-    if (OS.User && OS.User.PushSubscription) {
-      if (typeof OS.User.PushSubscription.optOut === 'function') await OS.User.PushSubscription.optOut();
-      if (typeof OS.User.PushSubscription.optIn === 'function') await OS.User.PushSubscription.optIn();
-    } else if (typeof OS.setSubscription === 'function') {
-      await OS.setSubscription(false);
-      await OS.setSubscription(true);
+    console.log("OS_DEBUG: Forzatura registrazione in corso...");
+    
+    // Prova a disiscrivere e re-iscrivere
+    try {
+      if (OS.User && OS.User.PushSubscription) {
+        if (typeof OS.User.PushSubscription.optOut === 'function') {
+          console.log("OS_DEBUG: Eseguo optOut...");
+          await OS.User.PushSubscription.optOut();
+        }
+        if (typeof OS.User.PushSubscription.optIn === 'function') {
+          console.log("OS_DEBUG: Eseguo optIn...");
+          await OS.User.PushSubscription.optIn();
+        }
+      } else if (typeof OS.setSubscription === 'function') {
+        console.log("OS_DEBUG: Eseguo setSubscription(false/true)...");
+        await OS.setSubscription(false);
+        await OS.setSubscription(true);
+      }
+    } catch (apiErr) {
+      console.warn("OS_DEBUG: Errore durante optOut/optIn (ignorabile):", apiErr);
     }
     
     await promptForPushNotifications();
   } catch (e) {
-    console.error("OS_DEBUG: Errore forceRegister:", e);
+    console.error("OS_DEBUG: Errore critico forceRegister:", e);
   }
 };
 

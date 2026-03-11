@@ -1,4 +1,4 @@
-// OneSignal UI Version: 1.0.1 - Integrated Fix Logic
+// OneSignal UI Version: 1.0.2 - Robust Bell Interaction
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
@@ -103,7 +103,18 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span className="text-xl font-bold tracking-tight">PeakSwim</span>
           </div>
           <button 
-            onClick={forceRegister}
+            onClick={async () => {
+              console.log("OS_DEBUG: Click su campanella desktop");
+              if (!isOneSignalInitialized()) {
+                console.log("OS_DEBUG: SDK non pronto, provo a inizializzare prima di forzare...");
+                const { data } = await supabase.auth.getUser();
+                if (data.user) {
+                  const role = userRole || 'none';
+                  await initializeOneSignal(data.user.id, role);
+                }
+              }
+              await forceRegister();
+            }}
             className={`p-2 rounded-xl transition-all ${isSubscribed ? 'text-emerald-500 hover:bg-emerald-50' : 'text-red-500 hover:bg-red-50 animate-pulse'}`}
             title={isSubscribed ? "Notifiche attive" : "Notifiche non attive - Clicca per attivare/riparare"}
           >
@@ -197,7 +208,17 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         </div>
         <div className="flex items-center space-x-2">
           <button 
-            onClick={forceRegister}
+            onClick={async () => {
+              console.log("OS_DEBUG: Click su campanella mobile");
+              if (!isOneSignalInitialized()) {
+                console.log("OS_DEBUG: Mobile - SDK non pronto, provo inizializzazione manuale...");
+                const { data } = await supabase.auth.getUser();
+                if (data.user) {
+                  await initializeOneSignal(data.user.id, userRole);
+                }
+              }
+              await forceRegister();
+            }}
             className={`p-2 rounded-xl transition-colors ${isSubscribed ? 'text-emerald-500' : 'text-red-500 animate-pulse'}`}
           >
             <Bell className="w-5 h-5" />
