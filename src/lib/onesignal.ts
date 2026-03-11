@@ -197,53 +197,57 @@ export const promptForPushNotifications = async () => {
   }
 };
 
+export const autoRepairOneSignal = async () => {
+  if (!isInitialized) return;
+  const OS: any = OneSignal;
+  const p = getNotificationPermission();
+  
+  // Se abbiamo il permesso ma lo SDK dice OFF, proviamo a svegliarlo in background
+  if (p === 'granted') {
+    const enabled = await getOneSignalSubscriptionState();
+    if (!enabled) {
+      console.log("OS_DEBUG: Rilevato stato OFF con GRANTED. Avvio riparazione automatica silenziosa...");
+      try {
+        if (OS.User?.PushSubscription?.optIn) {
+          await OS.User.PushSubscription.optIn();
+          console.log("OS_DEBUG: Auto-repair (v16 optIn) completato.");
+        } else if (typeof OS.setSubscription === 'function') {
+          await OS.setSubscription(true);
+          console.log("OS_DEBUG: Auto-repair (v15 setSubscription) completato.");
+        }
+      } catch (e) {
+        console.warn("OS_DEBUG: Errore durante auto-repair:", e);
+      }
+    }
+  }
+};
+
 export const forceRegister = async () => {
-  console.log("OS_DEBUG: forceRegister chiamato");
-  alert("Riparazione avviata...");
+  console.log("OS_DEBUG: forceRegister chiamato manualmente");
   try {
     const OS: any = OneSignal;
+    if (!isInitialized) return;
     
-    // Se non è inizializzato, proviamo ad inizializzare ADESSO ma senza bloccare tutto
-    if (!isInitialized) {
-      console.log("OS_DEBUG: SDK non pronto durante forceRegister, tento init rapido...");
-      // Non usiamo await qui se vogliamo che gli alert successivi compaiano comunque?
-      // In realtà forceRegister ha bisogno dell'SDK. 
-    }
-    
-    // Su iOS/Safari, OneSignal v16 talvolta si blocca. Un toggle optOut -> optIn aiuta.
-    if (OS.User && OS.User.PushSubscription) {
-      console.log("OS_DEBUG: [Toggle] Eseguo optOut...");
+    // Toggle aggressivo optOut -> optIn per iOS
+    if (OS.User?.PushSubscription) {
       try {
-        if (typeof OS.User.PushSubscription.optOut === 'function') {
-          await OS.User.PushSubscription.optOut();
-        }
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        console.log("OS_DEBUG: [Toggle] Eseguo optIn...");
-        if (typeof OS.User.PushSubscription.optIn === 'function') {
-          await OS.User.PushSubscription.optIn();
-        }
-      } catch (toggleErr) {
-        console.warn("OS_DEBUG: Errore durante il toggle:", toggleErr);
-      }
+        if (OS.User.PushSubscription.optOut) await OS.User.PushSubscription.optOut();
+        await new Promise(r => setTimeout(r, 800));
+        if (OS.User.PushSubscription.optIn) await OS.User.PushSubscription.optIn();
+      } catch (toggleErr) {}
     } else if (typeof OS.setSubscription === 'function') {
       await OS.setSubscription(true);
     }
 
     await promptForPushNotifications();
-    
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(r => setTimeout(r, 3000));
     
     const enabled = await getOneSubscriptionStatusFast();
     if (enabled) {
-      alert("Successo! Notifiche attivate (OFF -> ON).");
-    } else {
-      alert("Ancora OFF. Se sei su iPhone: \n1. Ricarica la pagina\n2. Clicca Lucchetto -> Reset Permessi\n3. Riprova");
+      console.log("OS_DEBUG: forceRegister manuale completato con successo (ON)");
     }
-
   } catch (e) {
     console.error("OS_DEBUG: Errore critico forceRegister:", e);
-    alert("Errore durante la riparazione: " + (e as any).message);
   }
 };
 
