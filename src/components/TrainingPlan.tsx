@@ -229,8 +229,9 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
        const indentSize = 6;
        const maxRectHeight = pageHeight - y - margin;
        
-       // Regex for keywords: Allenamento, Velocità, Fondo (case-insensitive)
-       const keywordsRegex = /^(Allenamento|Velocità|Fondo)\b/i;
+       // Regex for keywords: Allenamento, Velocità, Fondo, X la 33 (case-insensitive)
+       // Using a more inclusive regex for accented characters and spaces
+       const keywordsRegex = /^(Allenamento|Velocità|Fondo|X la 33)([:\s]|$)/i;
        
        // Process content to estimate height and prepare for rendering
        const lines = content.split('\n');
@@ -286,6 +287,10 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
          
          const currentMargin = rl.indent ? leftMargin + indentSize : leftMargin;
          doc.setFont('helvetica', rl.isBold ? 'bold' : 'normal');
+         
+         // If it's a bold header, maybe add a tiny extra space before it
+         if (rl.isBold) y += 1;
+
          const split = doc.splitTextToSize(rl.text, pageWidth - (margin * 2) - (rl.indent ? indentSize : 0));
          
          split.forEach((textLine: string) => {
@@ -294,6 +299,9 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
              y += (fontSize * 0.52);
            }
          });
+         
+         // If it's a bold header, add a tiny extra space after it
+         if (rl.isBold) y += 0.5;
        });
 
        const dateFileStr = format(selectedDate, 'yyMMdd');
