@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -65,8 +65,8 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
       <div className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl shadow-blue-900/10 border border-slate-100 p-8 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-600/20 rotate-3 hover:rotate-0 transition-transform duration-300">
-          <ShieldCheck className="w-8 h-8 text-white" />
+        <div className="w-24 h-24 mx-auto mb-6 drop-shadow-md hover:scale-105 transition-transform duration-300">
+          <img src="/logo.png" alt="PeakSwim Logo" className="w-full h-full object-contain" />
         </div>
         
         <div className="text-center mb-8">

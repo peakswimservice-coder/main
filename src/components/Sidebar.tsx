@@ -1,5 +1,5 @@
 // OneSignal UI Version: 1.0.9 - Auto-Repair & UI Fix
-import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
+import { Home, Users, Activity, Calendar, MessageSquare, Shield, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
 import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState, autoRepairOneSignal, logoutOneSignal } from '../lib/onesignal';
@@ -133,10 +133,10 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
     <>
       {/* Desktop Sidebar */}
       <div className="w-64 bg-white border-r border-slate-200 h-screen flex-col hidden md:flex shrink-0 shadow-sm z-20 sticky top-0">
-        <div className="p-6 flex items-center justify-between text-blue-600">
+        <div className="p-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <LifeBuoy className="w-8 h-8" />
-            <span className="text-xl font-bold tracking-tight">PeakSwim</span>
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <span className="text-xl font-black tracking-tight text-slate-900">PeakSwim</span>
           </div>
           <button 
             onClick={async () => {
@@ -219,9 +219,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
       {/* Mobile Top Header */}
       <div className="md:hidden bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 py-3 flex items-center justify-between z-20 sticky top-0">
-        <div className="flex items-center space-x-2 text-blue-600">
-          <LifeBuoy className="w-6 h-6" />
-          <span className="text-lg font-black tracking-tight">PeakSwim</span>
+        <div className="flex items-center space-x-2">
+          <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
+          <span className="text-lg font-black tracking-tight text-slate-900">PeakSwim</span>
         </div>
         <div className="flex items-center space-x-2">
           <button 

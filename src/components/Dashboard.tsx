@@ -285,8 +285,8 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-500">
       <header className="mb-8">
-        <div className="flex items-center space-x-3 mb-2">
-          <Droplets className="w-6 h-6 text-blue-500" />
+        <div className="flex items-center space-x-4 mb-2">
+          <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
             {userRole === 'athlete' ? 'Ciao!' : `Bentornato${coachName ? `, ${coachName}` : ''}`}
           </h1>
