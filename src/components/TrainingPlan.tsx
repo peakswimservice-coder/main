@@ -361,15 +361,17 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-[600px]">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center">
-              <Layout className="w-4 h-4 mr-2" />
-              Allenamento <span className="text-slate-900 ml-2 normal-case tracking-normal font-black">{activeGroup?.name}</span>
+        <div className="p-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/30 rounded-t-2xl">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
+              <Layout className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Allenamento</span> {activeGroup?.name}
             </h2>
-            
+          </div>
+          
+          <div className="flex items-center gap-3 ml-auto">
             {userRole === 'coach' && (
-              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-sm ml-auto sm:ml-4 shrink-0">
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl px-2 py-1 shadow-sm shrink-0">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1.5">Km:</span>
                 <input 
                   type="text" 
@@ -382,12 +384,12 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
                     }
                   }}
                   placeholder="0.0"
-                  className="w-12 bg-transparent text-sm font-bold text-slate-800 outline-none focus:ring-0 text-center"
+                  className="w-10 bg-transparent text-sm font-bold text-slate-800 outline-none focus:ring-0 text-center"
                 />
               </div>
             )}
             
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                   onClick={handleSharePdf}
                   disabled={isDirty || isGeneratingPdf || !content}
