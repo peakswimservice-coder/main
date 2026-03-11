@@ -1,7 +1,7 @@
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { promptForPushNotifications, isOneSignalInitialized, getOneSignalLastError, forceRegister } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -102,9 +102,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span className="text-xl font-bold tracking-tight">PeakSwim</span>
           </div>
           <button 
-            onClick={promptForPushNotifications}
-            className={`p-2 rounded-xl transition-all ${isSubscribed ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
-            title={isSubscribed ? "Notifiche attive" : "Attiva notifiche"}
+            onClick={forceRegister}
+            className={`p-2 rounded-xl transition-all ${isSubscribed ? 'text-emerald-500 hover:bg-emerald-50' : 'text-red-500 hover:bg-red-50 animate-pulse'}`}
+            title={isSubscribed ? "Notifiche attive" : "Notifiche non attive - Clicca per attivare/riparare"}
           >
             <Bell className="w-5 h-5" />
           </button>
@@ -113,40 +113,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span>USR: {userIdPrefix}</span>
             {userRole === 'coach' && <span title="Coach ID">CID: {coachIdPrefix}</span>}
             <div className="flex items-center gap-1 mt-1">
-              <span className={isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}>
-                {isOneSignalInitialized() ? 'INIT_OK' : (getOneSignalLastError() ? `ERR: ${getOneSignalLastError()?.substring(0, 8)}` : 'WAIT_INIT')}
+              <span className={isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}>
+                {isOneSignalInitialized() ? (isSubscribed ? 'STATO_OK' : 'DISATTIVE') : 'WAIT'}
               </span>
-              {isOneSignalInitialized() && (
-                <button 
-                  onClick={async () => {
-                    const { data } = await supabase.auth.getUser();
-                    if (!data.user) return;
-                    await fetch('/api/notify', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        type: 'status_update',
-                        athleteId: data.user.id,
-                        status: 'active',
-                        groupName: 'TEST DEBUG'
-                      })
-                    });
-                    alert("Test inviato! Controlla se ricevi la notifica.");
-                  }}
-                  className="bg-slate-200 hover:bg-slate-300 px-1 rounded text-[7px] text-slate-600 font-bold"
-                >
-                  TEST
-                </button>
-              )}
-              <button 
-                onClick={async () => {
-                  await forceRegister();
-                  alert("Registrazione forzata. Se la campanella è ancora grigia, cliccala per riattivarla.");
-                }}
-                className="bg-amber-100 hover:bg-amber-200 px-1 rounded text-[7px] text-amber-700 font-bold"
-              >
-                FIX
-              </button>
             </div>
           </div>
         </div>
@@ -227,8 +196,8 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         </div>
         <div className="flex items-center space-x-2">
           <button 
-            onClick={promptForPushNotifications}
-            className={`p-2 rounded-xl transition-colors ${isSubscribed ? 'text-emerald-500' : 'text-slate-500'}`}
+            onClick={forceRegister}
+            className={`p-2 rounded-xl transition-colors ${isSubscribed ? 'text-emerald-500' : 'text-red-500 animate-pulse'}`}
           >
             <Bell className="w-5 h-5" />
           </button>
@@ -236,45 +205,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span className="font-bold text-[8px]">APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
             <span className="text-[8px]">USR: {userIdPrefix}</span>
             {userRole === 'coach' && <span className="text-[8px]">CID: {coachIdPrefix}</span>}
-            <span className={`font-black ${isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}`}>
-              {isOneSignalInitialized() ? 'OK' : (getOneSignalLastError() ? 'ERR!' : 'WAIT')}
+            <span className={`font-black ${isOneSignalInitialized() ? (isSubscribed ? 'text-emerald-500' : 'text-red-500') : 'text-slate-300'}`}>
+              {isOneSignalInitialized() ? (isSubscribed ? 'OK' : 'OFF') : 'WAIT'}
             </span>
-            {isOneSignalInitialized() && (
-              <button 
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  const { data } = await supabase.auth.getUser();
-                  if (!data.user) return;
-                  await fetch('/api/notify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      type: 'status_update',
-                      athleteId: data.user.id,
-                      status: 'active',
-                      groupName: 'TEST MOBILE'
-                    })
-                  });
-                  alert("Test inviato!");
-                }}
-                className="mt-1 bg-white border border-slate-200 text-[8px] font-bold py-0.5 rounded shadow-sm text-slate-600"
-              >
-                TEST NOTIFICA
-              </button>
-            )}
-            <button 
-              onClick={async (e) => {
-                e.stopPropagation();
-                await forceRegister();
-                alert("Registrazione forzata.");
-              }}
-              className="mt-1 bg-amber-50 border border-amber-100 text-[8px] font-bold py-0.5 rounded shadow-sm text-amber-700"
-            >
-              FIX / REFRESH
-            </button>
-            {getOneSignalLastError() && (
-              <span className="text-[7px] text-red-500 truncate max-w-[60px]">{getOneSignalLastError()}</span>
-            )}
           </div>
           <button 
             onClick={handleLogout}
