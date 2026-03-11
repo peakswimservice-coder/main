@@ -1,8 +1,8 @@
-// OneSignal UI Version: 1.0.6 - Full Structural Fix
+// OneSignal UI Version: 1.0.9 - Auto-Repair & UI Fix
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState, autoRepairOneSignal } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -62,6 +62,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         
         if (isOneSignalInitialized() && enabled) {
           if (checkInterval) clearInterval(checkInterval);
+        } else if (isOneSignalInitialized() && !enabled) {
+          // Se siamo inizializzati ma non sottoscritti, tentiamo la riparazione automatica
+          autoRepairOneSignal();
         }
 
         const OS: any = OneSignal;
