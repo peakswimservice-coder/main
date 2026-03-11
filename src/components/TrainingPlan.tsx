@@ -458,8 +458,14 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-[600px]">
-        <div className="p-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/30 rounded-t-2xl">
+      <div 
+        style={{ borderTopColor: activeGroup?.color || '#e2e8f0', borderLeftColor: activeGroup?.color || '#e2e8f0' }}
+        className="bg-white rounded-2xl shadow-sm border border-l-4 border-t-4 border-slate-100 flex flex-col min-h-[600px]"
+      >
+        <div 
+          style={{ backgroundColor: activeGroup?.color ? activeGroup.color + '10' : undefined }}
+          className="p-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl"
+        >
           <div className="flex items-center gap-2">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center">
               <Layout className="w-4 h-4 mr-1.5" />
