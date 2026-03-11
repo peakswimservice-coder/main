@@ -109,6 +109,20 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
     fetchData();
   }, [userRole, userId]);
 
+  // Debounce save for km percorsi
+  useEffect(() => {
+    if (userRole !== 'athlete' || !attendance || attendance.is_present !== true) return;
+    
+    const currentKm = attendanceKm ? parseFloat(attendanceKm.replace(',', '.')) : null;
+    if (currentKm === attendance.distance_km) return;
+
+    const timer = setTimeout(() => {
+      handleSaveAttendance(true, attendanceKm);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [attendanceKm, attendance, userRole]);
+
   const handleApprove = async (athlete: any) => {
     if (!selectedGroupId) {
       alert("Seleziona un gruppo prima di approvare.");
@@ -328,7 +342,6 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                     placeholder="0.0"
                     value={attendanceKm}
                     onChange={(e) => setAttendanceKm(e.target.value.replace(/[^\d.,]/g, ''))}
-                    onBlur={() => handleSaveAttendance(true, attendanceKm)}
                     className="w-16 text-center font-black text-slate-800 bg-transparent border-b-2 border-slate-200 focus:border-blue-500 outline-none pb-0.5 transition-colors"
                   />
                 </div>
