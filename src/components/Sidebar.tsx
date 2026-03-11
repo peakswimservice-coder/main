@@ -2,7 +2,7 @@
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState, autoRepairOneSignal } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister, initializeOneSignal, getNotificationPermission, getOneSignalSubscriptionState, autoRepairOneSignal, logoutOneSignal } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -60,6 +60,9 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
         const enabled = await getOneSignalSubscriptionState();
         setIsSubscribed(enabled);
         
+        // Aggiorna permessi browser contestualmente al check SDK
+        setBrowserPerm(getNotificationPermission());
+        
         if (isOneSignalInitialized() && enabled) {
           if (checkInterval) clearInterval(checkInterval);
         } else if (isOneSignalInitialized() && !enabled) {
@@ -83,16 +86,26 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
 
     checkInterval = setInterval(() => {
       attempts++;
-      if (attempts > 15) {
-        clearInterval(checkInterval);
+      if (attempts > 15 && document.visibilityState !== 'visible') {
+        // Stop aggressive polling se in background dopo 15 tentativi su iOS
         return;
       }
       checkSubscription();
     }, 3000);
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        attempts = 0; // reset tentativi
+        checkSubscription();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       if (checkInterval) clearInterval(checkInterval);
       clearInterval(permInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [userRole, userEmail]);
 
@@ -109,6 +122,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
   const filteredNavItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   const handleLogout = async () => {
+    await logoutOneSignal();
     await supabase.auth.signOut();
   };
 

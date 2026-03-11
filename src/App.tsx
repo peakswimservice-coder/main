@@ -115,6 +115,10 @@ function App() {
       setSession(newSession);
       if (newSession?.user?.email) {
         detectRole(newSession.user.email, newSession);
+      } else {
+        // Hard reset local state if auth change results in missing user
+        setUserRole('none');
+        setAthleteStatus('none');
       }
     });
 

@@ -259,6 +259,22 @@ const getOneSubscriptionStatusFast = async (): Promise<boolean> => {
   } catch (e) { return false; }
 };
 
+export const logoutOneSignal = async () => {
+  if (!isInitialized) return;
+  try {
+    const OS: any = OneSignal;
+    if (typeof OS.logout === 'function') {
+      await OS.logout();
+      console.log("OS_DEBUG: OneSignal logout effettuato (v16)");
+    } else if (typeof OS.removeExternalUserId === 'function') {
+      await OS.removeExternalUserId();
+      console.log("OS_DEBUG: External User ID rimosso (v15)");
+    }
+  } catch (e) {
+    console.error("OS_DEBUG: Errore durante logout OneSignal:", e);
+  }
+};
+
 const syncPlayerId = async (userId: string, playerId: string) => {
   const { error } = await supabase
     .from('push_subscriptions')

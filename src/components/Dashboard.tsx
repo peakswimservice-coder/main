@@ -15,6 +15,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   const [athleteGroup, setAthleteGroup] = useState<any>(null);
   const [coachName, setCoachName] = useState<string>('');
   const [pendingAthletes, setPendingAthletes] = useState<any[]>([]);
+  const [activeAthletes, setActiveAthletes] = useState<any[]>([]);
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,12 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
           .select('*')
           .eq('status', 'pending');
         setPendingAthletes(pending || []);
+        
+        const { data: active } = await supabase
+          .from('athletes')
+          .select('*, groups(name)')
+          .eq('status', 'active');
+        setActiveAthletes(active || []);
         
         const { data: allGroups } = await supabase.from('groups').select('*').order('name');
         setGroups(allGroups || []);
@@ -221,9 +228,28 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
             <div className="bg-blue-100 p-2.5 rounded-xl"><Users className="w-5 h-5 text-blue-600" /></div>
           </div>
           <p className="text-4xl font-black text-slate-800">
-            {userRole === 'athlete' ? (athleteGroup?.name || '...') : '---'}
+            {userRole === 'athlete' ? (athleteGroup?.name || '...') : activeAthletes.length}
           </p>
-          <p className="text-sm text-slate-400 font-medium mt-2">Visibile agli atleti approvati</p>
+          {userRole === 'athlete' ? (
+             <p className="text-sm text-slate-400 font-medium mt-2">Visibile agli atleti approvati</p>
+          ) : (
+             <div className="mt-4 flex flex-wrap gap-2">
+               {Object.entries(
+                 activeAthletes.reduce((acc, a) => {
+                   const g = a.groups?.name || 'Senza Gruppo';
+                   acc[g] = (acc[g] || 0) + 1;
+                   return acc;
+                 }, {} as Record<string, number>)
+               ).map(([group, count]) => (
+                 <span key={group} className="px-2 py-1 bg-slate-50 border border-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm">
+                   {group}: {count as React.ReactNode}
+                 </span>
+               ))}
+               {activeAthletes.length === 0 && (
+                 <p className="text-sm text-slate-400 font-medium">Nessun atleta approvato</p>
+               )}
+             </div>
+          )}
         </div>
         
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
