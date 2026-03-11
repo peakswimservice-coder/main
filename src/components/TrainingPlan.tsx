@@ -28,6 +28,7 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [coachName, setCoachName] = useState<string>('');
 
   // 1. Fetch available groups
   const fetchGroups = async () => {
@@ -61,6 +62,17 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
 
   useEffect(() => {
     fetchGroups();
+    
+    // Fetch Coach Name
+    if (userRole === 'coach' && userId) {
+      supabase.from('coaches').select('full_name').eq('id', userId).maybeSingle().then(({data}) => {
+        if (data?.full_name) setCoachName(data.full_name);
+      });
+    } else if (userRole === 'athlete' && userId) {
+      supabase.from('athletes').select('coach_id, coaches(full_name)').eq('id', userId).maybeSingle().then(({data}: any) => {
+        if (data?.coaches?.full_name) setCoachName(data.coaches.full_name);
+      });
+    }
   }, []);
 
   // 2. Fetch session data when Date or Group changes
@@ -163,64 +175,76 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
     setIsGeneratingPdf(true);
     try {
        const { jsPDF } = await import('jspdf');
-       const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+       // Use A5 format
+       const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' });
        
-       const margin = 20;
+       const margin = 12;
        const pageWidth = doc.internal.pageSize.getWidth();
        const pageHeight = doc.internal.pageSize.getHeight();
-       let y = margin;
+       let y = margin + 5;
        
        // HEADER
        doc.setFont('helvetica', 'bold');
-       doc.setFontSize(22);
+       doc.setFontSize(18);
        doc.setTextColor(30, 58, 138); 
        doc.text('PeakSwim', margin, y);
        
        doc.setFont('helvetica', 'normal');
-       doc.setFontSize(14);
+       doc.setFontSize(11);
        doc.setTextColor(100, 116, 139); 
-       y += 8;
+       y += 6;
        doc.text('Programma di Allenamento', margin, y);
-       y += 15;
+       y += 10;
        
        // SUBHEADER INFO
+       doc.setFont('helvetica', 'bold');
+       doc.setFontSize(10);
+       doc.setTextColor(15, 23, 42); 
+       
        const dateDisplay = format(selectedDate, "EEEE, d MMMM yyyy", { locale: it });
        const capitalizedDateDisplay = dateDisplay.charAt(0).toUpperCase() + dateDisplay.slice(1);
        
-       doc.setFont('helvetica', 'bold');
-       doc.setFontSize(12);
-       doc.setTextColor(15, 23, 42); 
-       
-       doc.text(`Gruppo: ${activeGroup?.name || ''}`, margin, y);
-       doc.text(`Data: ${capitalizedDateDisplay}`, margin + 60, y);
+       doc.text(`Data: ${capitalizedDateDisplay}`, margin, y);
        if (distance) {
-         doc.text(`Km: ${distance}`, margin + 140, y);
+         doc.text(`Km: ${distance}`, pageWidth - margin - 20, y);
        }
+       y += 6;
+       doc.text(`Gruppo: ${activeGroup?.name || ''}`, margin, y);
+       y += 6;
+       doc.text(`Coach: ${coachName || '...'}`, margin, y);
        
-       y += 12;
+       y += 4;
        doc.setDrawColor(226, 232, 240); 
        doc.line(margin, y, pageWidth - margin, y);
-       y += 12;
+       y += 8;
        
        // CONTENT
        doc.setFont('helvetica', 'normal');
-       doc.setFontSize(11);
+       // Auto-adjust font size to fit on one page if content is long
+       let fontSize = 10;
+       const maxRectHeight = pageHeight - y - margin;
+       const tempSplit = doc.splitTextToSize(content || '', pageWidth - (margin * 2));
+       const estHeight = tempSplit.length * (fontSize * 0.5); // very rough estimate
+       
+       if (estHeight > maxRectHeight) {
+         fontSize = Math.max(7, Math.floor(fontSize * (maxRectHeight / estHeight)));
+       }
+       
+       doc.setFontSize(fontSize);
        doc.setTextColor(51, 65, 85);
 
        const splitContent = doc.splitTextToSize(content || 'Nessun allenamento inserito.', pageWidth - (margin * 2));
        
-       // Handle multi-page content
+       // Single page constraint - just draw until it fills or ends
        splitContent.forEach((line: string) => {
-         if (y > pageHeight - margin) {
-           doc.addPage();
-           y = margin;
+         if (y < pageHeight - margin) {
+           doc.text(line, margin, y);
+           y += (fontSize * 0.5) + 1;
          }
-         doc.text(line, margin, y);
-         y += 7;
        });
 
        const dateFileStr = format(selectedDate, 'yyMMdd');
-       const filename = `Programma_${activeGroup?.name.replace(/\s+/g, '')}_${dateFileStr}.pdf`;
+       const filename = `Allenamento_${activeGroup?.name.replace(/\s+/g, '')}_${dateFileStr}.pdf`;
        const pdfBlob = doc.output('blob');
 
        const file = new File([pdfBlob], filename, { type: 'application/pdf' });
