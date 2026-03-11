@@ -229,9 +229,9 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
        const indentSize = 6;
        const maxRectHeight = pageHeight - y - margin;
        
-       // Regex for keywords: Allenamento, Velocità, Fondo, X la 33 (case-insensitive)
+       // Regex for keywords: Allenamento, Velocità, Fondo, X la 33, Finale (case-insensitive)
        // Using a more inclusive regex for accented characters and spaces
-       const keywordsRegex = /^(Allenamento|Velocità|Fondo|X la 33)([:\s]|$)/i;
+       const keywordsRegex = /^(Allenamento|Velocità|Fondo|X la 33|Finale)([:\s]|$)/i;
        
        // Process content to estimate height and prepare for rendering
        const lines = content.split('\n');
