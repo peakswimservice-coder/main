@@ -2,7 +2,7 @@
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { isOneSignalInitialized, forceRegister } from '../lib/onesignal';
+import { isOneSignalInitialized, forceRegister, initializeOneSignal } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
