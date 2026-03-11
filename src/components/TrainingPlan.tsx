@@ -300,11 +300,18 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
        const pdfBlob = doc.output('blob');
 
        const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-       const canShare = navigator.canShare && navigator.canShare({ files: [file] });
-
-       if (canShare) {
-         await navigator.share({ title: 'Programma Allenamento', files: [file] });
-       } else {
+       // Try native share (iOS/Android), fall back to download
+       let shared = false;
+       try {
+         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+           await navigator.share({ title: 'Programma Allenamento', files: [file] });
+           shared = true;
+         }
+       } catch (shareErr: unknown) {
+         if ((shareErr as any)?.name === 'AbortError') shared = true;
+         else console.warn('Share failed:', shareErr);
+       }
+       if (!shared) {
          const url = URL.createObjectURL(pdfBlob);
          const a = document.createElement('a');
          a.href = url;
@@ -312,11 +319,12 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
          document.body.appendChild(a);
          a.click();
          document.body.removeChild(a);
-         URL.revokeObjectURL(url);
+         setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
        }
-    } catch (e) {
-       console.error("PDF Share Error:", e);
-       alert("Errore durante la generazione o la condivisione del PDF.");
+     } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error('PDF error:', msg);
+        alert('Errore nella generazione del PDF: ' + msg);
     } finally {
        setIsGeneratingPdf(false);
     }
@@ -375,6 +383,16 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
                   {isEditingGroups ? (
                     <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1">
                       <input 
+                        type="color"
+                        defaultValue={group.color || '#3B82F6'}
+                        title="Colore del gruppo"
+                        onBlur={async (e) => {
+                           await supabase.from('groups').update({color: e.target.value}).eq('id', group.id);
+                           fetchGroups();
+                        }}
+                        className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+                      />
+                      <input 
                         type="text" 
                         defaultValue={group.name}
                         onBlur={async (e) => {
@@ -399,12 +417,16 @@ export default function TrainingPlan({ userRole = 'coach', userId }: TrainingPla
                   ) : (
                     <button 
                       onClick={() => setActiveGroup(group)}
+                      style={isActive ? { backgroundColor: group.color || '#3B82F6', borderColor: group.color || '#3B82F6' } : {}}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                         isActive 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' 
+                        ? 'text-white shadow-md' 
                         : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
                       }`}
                     >
+                      {!isActive && group.color && (
+                        <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: group.color }} />
+                      )}
                       {group.name}
                     </button>
                   )}

@@ -83,7 +83,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
       // 3. Fetch Today's Sessions
       let query = supabase
         .from('training_sessions')
-        .select('*, groups(name)')
+        .select('*, groups(name, color)')
         .eq('date', dateStr);
         
       if (userRole === 'athlete' && currentAthleteGroup) {
@@ -461,14 +461,18 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                 </div>
               ) : todaySessions.map((session) => (
                 <div 
-                  key={session.id} 
-                  className={`p-4 rounded-2xl border transition-all ${userRole === 'athlete' && athleteGroup?.id === session.group_id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-500/10' : 'bg-white border-slate-100 shadow-sm'}`}
-                >
+                   key={session.id} 
+                   style={{ borderLeftColor: session.groups?.color || '#e2e8f0' }}
+                   className="p-4 rounded-2xl border border-l-4 bg-white shadow-sm transition-all hover:shadow-md"
+                 >
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {userRole === 'coach' && (
-                            <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-500">
+                            <span
+                              style={{ backgroundColor: session.groups?.color ? session.groups.color + '22' : '#f1f5f9', color: session.groups?.color || '#64748b', borderColor: session.groups?.color ? session.groups.color + '44' : '#e2e8f0' }}
+                              className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border"
+                            >
                               {session.groups?.name}
                             </span>
                         )}
