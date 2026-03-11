@@ -206,34 +206,42 @@ export const forceRegister = async () => {
       return;
     }
     
-    // In v16, optIn è fondamentale se i permessi sono già Granted
+    // Su iOS/Safari, OneSignal v16 talvolta si blocca. Un toggle optOut -> optIn aiuta.
     if (OS.User && OS.User.PushSubscription) {
-      console.log("OS_DEBUG: Forzo optIn e synchronization su v16...");
+      console.log("OS_DEBUG: [Toggle] Eseguo optOut...");
       try {
+        if (typeof OS.User.PushSubscription.optOut === 'function') {
+          await OS.User.PushSubscription.optOut();
+        }
+        // Piccola attesa tra out e in
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        console.log("OS_DEBUG: [Toggle] Eseguo optIn...");
         if (typeof OS.User.PushSubscription.optIn === 'function') {
           await OS.User.PushSubscription.optIn();
         }
-      } catch (e) {
-        console.warn("OS_DEBUG: Errore optIn (ignorabile se already opted-in)");
+      } catch (toggleErr) {
+        console.warn("OS_DEBUG: Errore durante il toggle:", toggleErr);
       }
     }
 
-    // Provo anche il metodo vecchio per sicurezza (non guasta)
+    // Forza anche il metodo v15 per ridondanza
     if (typeof OS.setSubscription === 'function') {
       await OS.setSubscription(true);
     }
 
-    // Forza il prompt (se non è già autorizzato) o ri-registra i permessi
+    // Forza il prompt (se non è già autorizzato) o ri-registra
     await promptForPushNotifications();
     
-    // Breve attesa per permettere all'SDK di aggiornare lo stato interno
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Attesa per permettere all'SDK di negoziare il token con APNs/Google
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     const enabled = await getOneSignalSubscriptionState();
     if (enabled) {
-      alert("Successo! Notifiche attivate. Lo STATO passerà a OK tra pochi secondi.");
+      alert("Successo! Lo stato ora risulta ATTIVO. Ricarica la pagina se non vedi OK.");
     } else {
-      alert("Lo stato risulta ancora disattivo. Se SUB è presente, prova a cambiare una view nell'app e tornare indietro, o ricaricare (Ctrl+F5).");
+      const p = getNotificationPermission();
+      alert(`Ancora OFF. Permesso Browser: ${p.toUpperCase()}. Se SUB è presente ma lo stato è OFF, verifica che il Safari Web ID sia corretto nella dashboard di OneSignal.`);
     }
 
   } catch (e) {
