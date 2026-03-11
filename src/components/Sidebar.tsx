@@ -1,4 +1,4 @@
-// OneSignal UI Version: 1.0.5 - V16 State Helper
+// OneSignal UI Version: 1.0.6 - Fixed Syntax & Logic
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
