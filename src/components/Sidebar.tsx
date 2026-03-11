@@ -112,9 +112,33 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span>APP: {import.meta.env.VITE_ONESIGNAL_APP_ID?.substring(0, 4) || 'NULL'}</span>
             <span>USR: {userIdPrefix}</span>
             {userRole === 'coach' && <span title="Coach ID">CID: {coachIdPrefix}</span>}
-            <span className={isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}>
-              {isOneSignalInitialized() ? 'INIT_OK' : (getOneSignalLastError() ? `ERR: ${getOneSignalLastError()?.substring(0, 8)}` : 'WAIT_INIT')}
-            </span>
+            <div className="flex items-center gap-1 mt-1">
+              <span className={isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}>
+                {isOneSignalInitialized() ? 'INIT_OK' : (getOneSignalLastError() ? `ERR: ${getOneSignalLastError()?.substring(0, 8)}` : 'WAIT_INIT')}
+              </span>
+              {isOneSignalInitialized() && (
+                <button 
+                  onClick={async () => {
+                    const { data } = await supabase.auth.getUser();
+                    if (!data.user) return;
+                    await fetch('/api/notify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'status_update',
+                        athleteId: data.user.id,
+                        status: 'active',
+                        groupName: 'TEST DEBUG'
+                      })
+                    });
+                    alert("Test inviato! Controlla se ricevi la notifica.");
+                  }}
+                  className="bg-slate-200 hover:bg-slate-300 px-1 rounded text-[7px] text-slate-600 font-bold"
+                >
+                  TEST
+                </button>
+              )}
+            </div>
           </div>
         </div>
         
@@ -206,6 +230,29 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             <span className={`font-black ${isOneSignalInitialized() ? 'text-emerald-500' : 'text-amber-500'}`}>
               {isOneSignalInitialized() ? 'OK' : (getOneSignalLastError() ? 'ERR!' : 'WAIT')}
             </span>
+            {isOneSignalInitialized() && (
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const { data } = await supabase.auth.getUser();
+                  if (!data.user) return;
+                  await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'status_update',
+                      athleteId: data.user.id,
+                      status: 'active',
+                      groupName: 'TEST MOBILE'
+                    })
+                  });
+                  alert("Test inviato!");
+                }}
+                className="mt-1 bg-white border border-slate-200 text-[8px] font-bold py-0.5 rounded shadow-sm text-slate-600"
+              >
+                TEST NOTIFICA
+              </button>
+            )}
             {getOneSignalLastError() && (
               <span className="text-[7px] text-red-500 truncate max-w-[60px]">{getOneSignalLastError()}</span>
             )}
