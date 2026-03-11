@@ -1,7 +1,7 @@
 import { Home, Users, Activity, Calendar, MessageSquare, Shield, LifeBuoy, LogOut, Settings, Bell } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../App';
-import { promptForPushNotifications, isOneSignalInitialized, getOneSignalLastError } from '../lib/onesignal';
+import { promptForPushNotifications, isOneSignalInitialized, getOneSignalLastError, forceRegister } from '../lib/onesignal';
 import OneSignal from 'react-onesignal';
 import { useState, useEffect } from 'react';
 
@@ -138,6 +138,15 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                   TEST
                 </button>
               )}
+              <button 
+                onClick={async () => {
+                  await forceRegister();
+                  alert("Registrazione forzata. Se la campanella è ancora grigia, cliccala per riattivarla.");
+                }}
+                className="bg-amber-100 hover:bg-amber-200 px-1 rounded text-[7px] text-amber-700 font-bold"
+              >
+                FIX
+              </button>
             </div>
           </div>
         </div>
@@ -253,6 +262,16 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                 TEST NOTIFICA
               </button>
             )}
+            <button 
+              onClick={async (e) => {
+                e.stopPropagation();
+                await forceRegister();
+                alert("Registrazione forzata.");
+              }}
+              className="mt-1 bg-amber-50 border border-amber-100 text-[8px] font-bold py-0.5 rounded shadow-sm text-amber-700"
+            >
+              FIX / REFRESH
+            </button>
             {getOneSignalLastError() && (
               <span className="text-[7px] text-red-500 truncate max-w-[60px]">{getOneSignalLastError()}</span>
             )}

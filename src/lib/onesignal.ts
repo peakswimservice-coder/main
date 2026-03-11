@@ -157,6 +157,11 @@ export const promptForPushNotifications = async () => {
     
     console.log("OS_DEBUG: Tentativo di mostrare prompt slidedown...");
     
+    // In v16, we might need to check if we are opted out
+    if (OS.User && OS.User.PushSubscription && typeof OS.User.PushSubscription.optIn === 'function') {
+      await OS.User.PushSubscription.optIn();
+    }
+
     if (OS.slidedown && typeof OS.slidedown.prompt === 'function') {
       await OS.slidedown.prompt();
     } else if (typeof OS.showHttpPrompt === 'function') {
@@ -168,6 +173,26 @@ export const promptForPushNotifications = async () => {
     }
   } catch (error) {
     console.error("OS_DEBUG: Errore prompt:", error);
+  }
+};
+
+export const forceRegister = async () => {
+  try {
+    const OS: any = OneSignal;
+    if (!isInitialized) return;
+    
+    console.log("OS_DEBUG: Forzatura registrazione...");
+    if (OS.User && OS.User.PushSubscription) {
+      if (typeof OS.User.PushSubscription.optOut === 'function') await OS.User.PushSubscription.optOut();
+      if (typeof OS.User.PushSubscription.optIn === 'function') await OS.User.PushSubscription.optIn();
+    } else if (typeof OS.setSubscription === 'function') {
+      await OS.setSubscription(false);
+      await OS.setSubscription(true);
+    }
+    
+    await promptForPushNotifications();
+  } catch (e) {
+    console.error("OS_DEBUG: Errore forceRegister:", e);
   }
 };
 
