@@ -608,35 +608,37 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
               <p className="text-slate-500 font-medium">Gestisci e visualizza il tuo documento ufficiale.</p>
             </div>
 
-            <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 min-h-[300px] flex items-center justify-center overflow-hidden mb-8">
+            <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden mb-8">
               {federationCardUrl ? (
                 federationCardUrl.toLowerCase().includes('.pdf') ? (
-                  <div className="p-12 text-center">
-                    <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
-                    <p className="text-slate-900 font-black text-xl mb-4">Tesserino PDF caricato</p>
-                    <a 
-                      href={federationCardUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-xl border border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all"
+                  <div className="p-12 text-center w-full">
+                    <FileText className="w-24 h-24 text-blue-600 mx-auto mb-6" />
+                    <button 
+                      onClick={() => window.open(federationCardUrl, '_blank')}
+                      className="inline-flex items-center gap-3 bg-white px-10 py-4 rounded-2xl border-2 border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all active:scale-95"
                     >
-                      <Eye className="w-5 h-5" /> Ingrandisci PDF
-                    </a>
+                      <Eye className="w-6 h-6" /> Ingrandisci
+                    </button>
                   </div>
                 ) : (
-                  <div 
-                    className="relative w-full cursor-zoom-in group"
-                    onClick={() => setShowZoom(true)}
-                  >
-                    <img 
-                      src={federationCardUrl} 
-                      alt="Tesserino Federale" 
-                      className="w-full h-auto object-contain transition-transform group-hover:scale-[1.01]"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
-                      <div className="bg-white/90 backdrop-blur px-6 py-3 rounded-2xl text-sm font-black text-slate-800 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 flex items-center gap-2 shadow-2xl border border-white">
-                        <Search className="w-5 h-5 text-blue-600" /> CLICCA PER INGRANDIRE
-                      </div>
+                  <div className="w-full flex flex-col items-center">
+                    <div 
+                      className="relative w-full cursor-zoom-in group"
+                      onClick={() => setShowZoom(true)}
+                    >
+                      <img 
+                        src={federationCardUrl} 
+                        alt="Tesserino Federale" 
+                        className="w-full h-auto object-contain"
+                      />
+                    </div>
+                    <div className="p-6 w-full flex justify-center bg-white/50 border-t border-slate-100">
+                      <button 
+                        onClick={() => setShowZoom(true)}
+                        className="inline-flex items-center gap-3 bg-white px-10 py-4 rounded-2xl border-2 border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all active:scale-95"
+                      >
+                        <Search className="w-6 h-6" /> Ingrandisci
+                      </button>
                     </div>
                   </div>
                 )
