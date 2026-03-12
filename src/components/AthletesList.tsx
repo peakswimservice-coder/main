@@ -4,6 +4,67 @@ import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2, Credit
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
+const TesserinoPreview = ({ url, onClick }: { url: string; onClick: () => void }) => {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const getUrl = async () => {
+      if (!url.includes('federation-cards/')) {
+        setSignedUrl(url);
+        return;
+      }
+      setLoading(true);
+      try {
+        const cleanPath = url.split('federation-cards/').pop();
+        if (cleanPath) {
+          const { data, error } = await supabase.storage
+            .from('federation-cards')
+            .createSignedUrl(cleanPath, 3600);
+          if (error) throw error;
+          setSignedUrl(data.signedUrl);
+        }
+      } catch (err) {
+        console.error("Error fetching preview URL:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getUrl();
+  }, [url]);
+
+  if (loading) return <div className="w-full h-24 bg-slate-50 flex items-center justify-center rounded-xl animate-pulse text-[10px] font-black text-slate-300 uppercase tracking-widest mt-4">Caricamento...</div>;
+  if (!signedUrl) return null;
+
+  const isPdf = signedUrl.toLowerCase().includes('.pdf');
+
+  return (
+    <div className="w-full mt-4 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 flex flex-col">
+      <div className="w-full flex items-center justify-center p-2">
+        {isPdf ? (
+          <div className="py-8 flex flex-col items-center gap-2">
+            <FileText className="w-12 h-12 text-blue-600" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento PDF</span>
+          </div>
+        ) : (
+          <img 
+            src={signedUrl} 
+            alt="Preview" 
+            className="w-full h-auto object-contain max-h-[150px] cursor-zoom-in"
+            onClick={onClick}
+          />
+        )}
+      </div>
+      <button 
+        onClick={onClick}
+        className="w-full py-3 bg-white border-t border-slate-100 flex items-center justify-center gap-2 text-xs font-black text-blue-600 hover:bg-slate-50 transition-colors uppercase tracking-widest"
+      >
+        <Search className="w-3.5 h-3.5" /> Ingrandisci
+      </button>
+    </div>
+  );
+};
+
 export default function AthletesList() {
   const [activeTab, setActiveTab] = useState<'active' | 'pending'>('active');
   const [athletes, setAthletes] = useState<any[]>([]);
@@ -324,12 +385,10 @@ export default function AthletesList() {
                       <div className="flex-1">
                         <span className="font-bold text-slate-800 block text-lg sm:text-base">{athlete.full_name || athlete.email}</span>
                         {athlete.federation_card_url && (
-                          <button 
-                            onClick={() => handleViewCard(athlete.federation_card_url)}
-                            className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest mt-0.5"
-                          >
-                            <CreditCard className="w-3 h-3" /> Vedi Tesserino
-                          </button>
+                          <TesserinoPreview 
+                            url={athlete.federation_card_url} 
+                            onClick={() => handleViewCard(athlete.federation_card_url)} 
+                          />
                         )}
                       </div>
                     </div>
