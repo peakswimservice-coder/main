@@ -602,28 +602,13 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
           </div>
 
           {/* 4. FEDERATION CARD (BOTTOM) */}
-          <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-blue-900/5 border border-slate-100">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900">Tesserino Federale</h2>
-                <p className="text-slate-500 font-medium">Carica e visualizza il tuo documento ufficiale.</p>
-              </div>
-              <label className="relative cursor-pointer group">
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept=".jpg,.jpeg,.png,.gif,.bmp,.pdf"
-                  onChange={handleFileUpload}
-                  disabled={uploadingCard}
-                />
-                <div className="flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-600/20 group-hover:bg-blue-700 transition-all active:scale-95">
-                  {uploadingCard ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-5 h-5" />}
-                  {federationCardUrl ? 'Sostituisci File' : 'Carica Tesserino'}
-                </div>
-              </label>
+          <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-blue-900/5 border border-slate-100 flex flex-col">
+            <div className="mb-8">
+              <h2 className="text-2xl font-black text-slate-900">Tesserino Federale</h2>
+              <p className="text-slate-500 font-medium">Gestisci e visualizza il tuo documento ufficiale.</p>
             </div>
 
-            <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 min-h-[300px] flex items-center justify-center overflow-hidden">
+            <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 min-h-[300px] flex items-center justify-center overflow-hidden mb-8">
               {federationCardUrl ? (
                 federationCardUrl.toLowerCase().includes('.pdf') ? (
                   <div className="p-12 text-center">
@@ -635,12 +620,12 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                       rel="noopener noreferrer" 
                       className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-xl border border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all"
                     >
-                      <Eye className="w-5 h-5" /> Visualizza PDF
+                      <Eye className="w-5 h-5" /> Ingrandisci PDF
                     </a>
                   </div>
                 ) : (
                   <div 
-                    className="relative w-full h-full cursor-zoom-in group"
+                    className="relative w-full cursor-zoom-in group"
                     onClick={() => setShowZoom(true)}
                   >
                     <img 
@@ -661,11 +646,27 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                     <ImageIcon className="w-10 h-10 text-slate-300" />
                   </div>
                   <p className="text-slate-400 font-black">Nessun file caricato</p>
-                  <p className="text-slate-300 text-sm font-bold uppercase tracking-widest mt-1">Carica il tuo tesserino sopra</p>
+                  <p className="text-slate-300 text-sm font-bold uppercase tracking-widest mt-1">Carica il tuo tesserino qui sotto</p>
                 </div>
               )}
             </div>
-            <p className="mt-6 text-center text-xs text-slate-400 font-medium">Formati supportati: JPG, PNG, GIF, BMP, PDF (Max 5MB)</p>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+              <label className="relative cursor-pointer group w-full md:w-auto">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept=".jpg,.jpeg,.png,.gif,.bmp,.pdf"
+                  onChange={handleFileUpload}
+                  disabled={uploadingCard}
+                />
+                <div className="flex items-center justify-center gap-3 bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl shadow-blue-600/20 group-hover:bg-blue-700 transition-all active:scale-95">
+                  {uploadingCard ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-5 h-5" />}
+                  {federationCardUrl ? 'Sostituisci Tesserino' : 'Carica Tesserino'}
+                </div>
+              </label>
+              <p className="text-xs text-slate-400 font-medium">JPG, PNG, PDF (Max 5MB)</p>
+            </div>
           </div>
         </div>
       )}
