@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, FileText, Image as ImageIcon, Eye, Search } from 'lucide-react';
+import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, Image as ImageIcon, Eye, Search } from 'lucide-react';
 import type { ViewType, UserRole } from '../App';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -611,14 +611,20 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
             <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden mb-8">
               {federationCardUrl ? (
                 federationCardUrl.toLowerCase().includes('.pdf') ? (
-                  <div className="p-12 text-center w-full">
-                    <FileText className="w-24 h-24 text-blue-600 mx-auto mb-6" />
-                    <button 
-                      onClick={() => window.open(federationCardUrl, '_blank')}
-                      className="inline-flex items-center gap-3 bg-white px-10 py-4 rounded-2xl border-2 border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all active:scale-95"
-                    >
-                      <Eye className="w-6 h-6" /> Ingrandisci
-                    </button>
+                  <div className="w-full flex flex-col items-center">
+                    <iframe 
+                      src={`${federationCardUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+                      className="w-full h-[450px] border-none"
+                      title="Anteprima PDF"
+                    />
+                    <div className="p-6 w-full flex justify-center bg-white/50 border-t border-slate-100">
+                      <button 
+                        onClick={() => window.open(federationCardUrl, '_blank')}
+                        className="inline-flex items-center gap-3 bg-white px-10 py-4 rounded-2xl border-2 border-slate-200 font-black text-blue-600 shadow-sm hover:shadow-md transition-all active:scale-95"
+                      >
+                        <Eye className="w-6 h-6" /> Ingrandisci
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="w-full flex flex-col items-center">

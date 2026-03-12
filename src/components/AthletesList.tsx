@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2, CreditCard, Eye, FileText } from 'lucide-react';
+import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2, CreditCard } from 'lucide-react';
 
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -40,17 +40,18 @@ const TesserinoPreview = ({ url, onClick }: { url: string; onClick: () => void }
 
   return (
     <div className="w-full mt-4 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 flex flex-col">
-      <div className="w-full flex items-center justify-center p-2">
+      <div className="w-full flex items-center justify-center">
         {isPdf ? (
-          <div className="py-8 flex flex-col items-center gap-2">
-            <FileText className="w-12 h-12 text-blue-600" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento PDF</span>
-          </div>
+          <iframe 
+            src={`${signedUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+            className="w-full h-[300px] border-none"
+            title="Anteprima PDF"
+          />
         ) : (
           <img 
             src={signedUrl} 
             alt="Preview" 
-            className="w-full h-auto object-contain max-h-[150px] cursor-zoom-in"
+            className="w-full h-auto object-contain max-h-[150px] cursor-zoom-in p-2"
             onClick={onClick}
           />
         )}
@@ -551,18 +552,11 @@ export default function AthletesList() {
                   <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Caricamento sicuro...</p>
                 </div>
               ) : cardUrl?.toLowerCase().includes('.pdf') ? (
-                <div className="p-12 text-center">
-                  <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
-                  <p className="text-slate-900 font-bold text-xl mb-4">Documento PDF</p>
-                  <a 
-                    href={cardUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition"
-                  >
-                    <Eye className="w-5 h-5" /> Apri PDF Completo
-                  </a>
-                </div>
+                <iframe 
+                  src={`${cardUrl}#toolbar=0&navpanes=0&scrollbar=0`} 
+                  className="w-full h-[60vh] border-none"
+                  title="Documento PDF"
+                />
               ) : (
                 <img 
                   src={cardUrl || ''} 
