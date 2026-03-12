@@ -50,7 +50,21 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
           if (data.groups) {
             currentAthleteGroup = data.groups;
           }
-          setFederationCardUrl(data.federation_card_url);
+          
+          if (data.federation_card_url) {
+            // Se URL è un percorso relativo (es: federation-cards/...) genera signed URL
+            if (data.federation_card_url.includes('federation-cards/')) {
+               const cleanPath = data.federation_card_url.split('federation-cards/').pop();
+               if (cleanPath) {
+                 const { data: signedData } = await supabase.storage
+                   .from('federation-cards')
+                   .createSignedUrl(cleanPath, 3600); // Valido per 1 ora
+                 setFederationCardUrl(signedData?.signedUrl || null);
+               }
+            } else {
+               setFederationCardUrl(data.federation_card_url);
+            }
+          }
         }
         
         // Fetch Attendance for selectedDate
@@ -135,27 +149,31 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
     setUploadingCard(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `federation-cards/${fileName}`;
+      const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`; // Struttura cartella per utente
 
       const { error: uploadError } = await supabase.storage
         .from('federation-cards')
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('federation-cards')
-        .getPublicUrl(filePath);
+      // Salviamo il percorso relativo nel database, non la URL pubblica
+      const dbPath = `federation-cards/${filePath}`;
 
       const { error: updateError } = await supabase
         .from('athletes')
-        .update({ federation_card_url: publicUrl })
+        .update({ federation_card_url: dbPath })
         .eq('id', userId);
 
       if (updateError) throw updateError;
 
-      setFederationCardUrl(publicUrl);
+      // Generiamo subito un signed URL per l'anteprima
+      const { data: signedData } = await supabase.storage
+        .from('federation-cards')
+        .createSignedUrl(filePath, 3600);
+        
+      setFederationCardUrl(signedData?.signedUrl || null);
     } catch (err: any) {
       alert("Errore durante il caricamento: " + err.message);
     } finally {
