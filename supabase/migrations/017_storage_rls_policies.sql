@@ -1,9 +1,6 @@
 -- 17. Politiche di Sicurezza per lo Storage (Tesserini Federali)
 -- Questo script imposta le regole di accesso per il bucket 'federation-cards'.
 
--- Assicurati che RLS sia abilitato sulla tabella degli oggetti di storage
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
 -- 1. Permetti agli atleti di gestire i propri file (Upload, Select, Update, Delete)
 -- Basato sulla struttura della cartella: 'federation-cards/ID_ATLETA/nomefile.est'
 DROP POLICY IF EXISTS "Tesserini: Atleti gestiscono propri file" ON storage.objects;
