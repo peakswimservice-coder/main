@@ -3,17 +3,17 @@
   "name": "PeakSwim Coach App",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "favicon.ico?v=2",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/png"
     },
     {
-      "src": "icon-192.png",
+      "src": "icon-192.png?v=2",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.png?v=2",
       "type": "image/png",
       "sizes": "512x512"
     }
