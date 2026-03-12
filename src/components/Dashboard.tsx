@@ -640,17 +640,17 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                   </div>
                 ) : (
                   <div 
-                    className="relative w-full max-w-lg aspect-video md:aspect-[3/2] p-4 cursor-zoom-in group"
+                    className="relative w-full h-full cursor-zoom-in group"
                     onClick={() => setShowZoom(true)}
                   >
                     <img 
                       src={federationCardUrl} 
                       alt="Tesserino Federale" 
-                      className="w-full h-full object-contain rounded-xl shadow-lg border-4 border-white transition-transform group-hover:scale-[1.02]"
+                      className="w-full h-auto object-contain transition-transform group-hover:scale-[1.01]"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center rounded-xl">
-                      <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-2xl text-xs font-black text-slate-800 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 flex items-center gap-2 shadow-xl border border-white">
-                        <Search className="w-4 h-4 text-blue-600" /> CLICCA PER INGRANDIRE
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                      <div className="bg-white/90 backdrop-blur px-6 py-3 rounded-2xl text-sm font-black text-slate-800 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 flex items-center gap-2 shadow-2xl border border-white">
+                        <Search className="w-5 h-5 text-blue-600" /> CLICCA PER INGRANDIRE
                       </div>
                     </div>
                   </div>

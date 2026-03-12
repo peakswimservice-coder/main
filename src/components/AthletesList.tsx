@@ -485,9 +485,14 @@ export default function AthletesList() {
                 <X className="w-6 h-6 text-slate-400" />
               </button>
             </div>
-            <div className="p-8 flex items-center justify-center bg-slate-50 min-h-[400px]">
-              {cardUrl?.toLowerCase().includes('.pdf') ? (
-                <div className="text-center">
+            <div className="p-0 flex items-center justify-center bg-slate-50 min-h-[400px] relative">
+              {loadingCard ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                  <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Caricamento sicuro...</p>
+                </div>
+              ) : cardUrl?.toLowerCase().includes('.pdf') ? (
+                <div className="p-12 text-center">
                   <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
                   <p className="text-slate-900 font-bold text-xl mb-4">Documento PDF</p>
                   <a 
@@ -503,7 +508,7 @@ export default function AthletesList() {
                 <img 
                   src={cardUrl || ''} 
                   alt="Tesserino" 
-                  className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg border-4 border-white"
+                  className="w-full h-auto max-h-[70vh] object-contain shadow-2xl"
                 />
               )}
             </div>
