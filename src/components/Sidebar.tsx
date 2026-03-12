@@ -202,8 +202,8 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-1 left-0 right-0 z-50 px-2 lg:px-4 pb-safe pointer-events-none">
-        <div className="bg-white/80 backdrop-blur-lg border border-slate-200 shadow-lg rounded-2xl flex justify-around items-center p-1 pointer-events-auto">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-0 pb-safe pointer-events-none">
+        <div className="bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex justify-around items-center p-1 pointer-events-auto">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;

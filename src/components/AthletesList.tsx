@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2 } from 'lucide-react';
+import { Search, Filter, MoreVertical, UserPlus, Check, X, Edit2, Trash2, CreditCard, Eye, FileText } from 'lucide-react';
 
 import { supabase } from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -18,6 +18,9 @@ export default function AthletesList() {
 
   const [editingAthleteId, setEditingAthleteId] = useState<string | null>(null);
   const [showOptionsId, setShowOptionsId] = useState<string | null>(null);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardUrl, setCardUrl] = useState<string | null>(null);
+  const [loadingCard, setLoadingCard] = useState(false);
 
   const fetchData = async (currentSession: Session) => {
     setLoading(true);
@@ -40,7 +43,7 @@ export default function AthletesList() {
             groups ( name )
           `)
           .eq('coach_id', coachData.id)
-          .order('created_at', { ascending: false });
+          .order('full_name', { ascending: true });
 
         if (athletesData) {
           setAthletes(athletesData.filter(a => a.status === 'active'));
@@ -179,6 +182,34 @@ export default function AthletesList() {
     }
   };
 
+  const handleViewCard = async (url: string) => {
+    if (!url) {
+      alert("L'atleta non ha ancora caricato un tesserino.");
+      return;
+    }
+    setLoadingCard(true);
+    try {
+      if (url.includes('federation-cards/')) {
+        const cleanPath = url.split('federation-cards/').pop();
+        if (cleanPath) {
+          const { data, error } = await supabase.storage
+            .from('federation-cards')
+            .createSignedUrl(cleanPath, 3600);
+          if (error) throw error;
+          setCardUrl(data.signedUrl);
+        }
+      } else {
+        setCardUrl(url);
+      }
+      setShowCardModal(true);
+    } catch (err) {
+      console.error("Error generating signed URL:", err);
+      alert("Impossibile caricare il tesserino.");
+    } finally {
+      setLoadingCard(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -290,8 +321,16 @@ export default function AthletesList() {
                       <div className="w-12 h-12 rounded-full bg-blue-100 border-2 border-white shadow-sm flex items-center justify-center font-bold text-blue-600 text-lg">
                         {athlete.full_name?.[0] || '?'}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <span className="font-bold text-slate-800 block text-lg sm:text-base">{athlete.full_name || athlete.email}</span>
+                        {athlete.federation_card_url && (
+                          <button 
+                            onClick={() => handleViewCard(athlete.federation_card_url)}
+                            className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-widest mt-0.5"
+                          >
+                            <CreditCard className="w-3 h-3" /> Vedi Tesserino
+                          </button>
+                        )}
                       </div>
                     </div>
                     
@@ -424,6 +463,53 @@ export default function AthletesList() {
           </div>
         )}
       </div>
+      {/* Modal Visualizzazione Tesserino */}
+      {showCardModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowCardModal(false)}
+        >
+          <div 
+            className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-xl"><CreditCard className="w-5 h-5 text-blue-600" /></div>
+                <h3 className="text-xl font-bold text-slate-900">Tesserino Federale</h3>
+              </div>
+              <button 
+                onClick={() => setShowCardModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-8 flex items-center justify-center bg-slate-50 min-h-[400px]">
+              {cardUrl?.toLowerCase().includes('.pdf') ? (
+                <div className="text-center">
+                  <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
+                  <p className="text-slate-900 font-bold text-xl mb-4">Documento PDF</p>
+                  <a 
+                    href={cardUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition"
+                  >
+                    <Eye className="w-5 h-5" /> Apri PDF Completo
+                  </a>
+                </div>
+              ) : (
+                <img 
+                  src={cardUrl || ''} 
+                  alt="Tesserino" 
+                  className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg border-4 border-white"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

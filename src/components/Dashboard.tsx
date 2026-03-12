@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, FileText, Image as ImageIcon, Eye } from 'lucide-react';
+import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, FileText, Image as ImageIcon, Eye, Search } from 'lucide-react';
 import type { ViewType, UserRole } from '../App';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -26,6 +26,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   const [attendanceSaved, setAttendanceSaved] = useState(false);
   const [federationCardUrl, setFederationCardUrl] = useState<string | null>(null);
   const [uploadingCard, setUploadingCard] = useState(false);
+  const [showZoom, setShowZoom] = useState(false);
   
   // States for approval process
   const [approvingAthlete, setApprovingAthlete] = useState<any>(null);
@@ -624,7 +625,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
 
             <div className="bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 min-h-[300px] flex items-center justify-center overflow-hidden">
               {federationCardUrl ? (
-                federationCardUrl.toLowerCase().endsWith('.pdf') ? (
+                federationCardUrl.toLowerCase().includes('.pdf') ? (
                   <div className="p-12 text-center">
                     <FileText className="w-20 h-20 text-blue-600 mx-auto mb-4" />
                     <p className="text-slate-900 font-black text-xl mb-4">Tesserino PDF caricato</p>
@@ -638,12 +639,20 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                     </a>
                   </div>
                 ) : (
-                  <div className="relative w-full max-w-lg aspect-video md:aspect-[3/2] p-4">
+                  <div 
+                    className="relative w-full max-w-lg aspect-video md:aspect-[3/2] p-4 cursor-zoom-in group"
+                    onClick={() => setShowZoom(true)}
+                  >
                     <img 
                       src={federationCardUrl} 
                       alt="Tesserino Federale" 
-                      className="w-full h-full object-contain rounded-xl shadow-lg border-4 border-white"
+                      className="w-full h-full object-contain rounded-xl shadow-lg border-4 border-white transition-transform group-hover:scale-[1.02]"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center rounded-xl">
+                      <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-2xl text-xs font-black text-slate-800 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 flex items-center gap-2 shadow-xl border border-white">
+                        <Search className="w-4 h-4 text-blue-600" /> CLICCA PER INGRANDIRE
+                      </div>
+                    </div>
                   </div>
                 )
               ) : (
@@ -657,6 +666,28 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
               )}
             </div>
             <p className="mt-6 text-center text-xs text-slate-400 font-medium">Formati supportati: JPG, PNG, GIF, BMP, PDF (Max 5MB)</p>
+          </div>
+        </div>
+      )}
+      {/* Modal Zoom Tesserino */}
+      {showZoom && federationCardUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowZoom(false)}
+        >
+          <button 
+            onClick={() => setShowZoom(false)}
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div className="max-w-4xl w-full max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={federationCardUrl} 
+              alt="Tesserino Zoom" 
+              className="max-w-full max-h-full object-contain shadow-2xl rounded-lg animate-in zoom-in-95 duration-300" 
+            />
           </div>
         </div>
       )}
