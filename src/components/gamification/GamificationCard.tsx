@@ -124,8 +124,8 @@ export default function GamificationCard({ userId, isCoach = false }: Gamificati
                 <p className="text-base font-black text-slate-800">{currentLeg.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">I tuoi Km Virtuali</p>
-                <p className="text-base font-black text-blue-600 italic">{virtualKm.toFixed(1)} <span className="text-xs uppercase">km</span></p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">I tuoi Kmv</p>
+                <p className="text-base font-black text-blue-600 italic">{virtualKm.toFixed(1)} <span className="text-xs uppercase">Kmv</span></p>
               </div>
             </div>
             <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 mb-2">
@@ -181,7 +181,7 @@ export default function GamificationCard({ userId, isCoach = false }: Gamificati
                   {entry.full_name}
                 </span>
                 <span className={`text-xs font-black italic shrink-0 ${entry.is_me ? 'text-blue-100' : 'text-blue-600'}`}>
-                  {entry.virtual_km.toFixed(1)} km
+                  {entry.virtual_km.toFixed(1)} Kmv
                 </span>
               </div>
             ))}

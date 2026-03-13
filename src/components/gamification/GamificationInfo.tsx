@@ -38,11 +38,11 @@ export default function GamificationInfo() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { tag: 'T1', route: 'Genova → Elba', km: '190 km' },
-            { tag: 'T2', route: 'Elba → Napoli', km: '310 km' },
-            { tag: 'T3', route: 'Napoli → Olbia', km: '270 km' },
-            { tag: 'T4', route: 'Olbia → Bastia', km: '170 km' },
-            { tag: 'T5', route: 'Bastia → Genova', km: '200 km' },
+            { tag: 'T1', route: 'Genova → Elba', km: '190 Km' },
+            { tag: 'T2', route: 'Elba → Napoli', km: '310 Km' },
+            { tag: 'T3', route: 'Napoli → Olbia', km: '270 Km' },
+            { tag: 'T4', route: 'Olbia → Bastia', km: '170 Km' },
+            { tag: 'T5', route: 'Bastia → Genova', km: '200 Km' },
           ].map((t) => (
             <div key={t.tag} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
               <div className="flex items-center gap-4">
@@ -65,18 +65,18 @@ export default function GamificationInfo() {
         </div>
         <div className="space-y-8">
           <div>
-            <h3 className="text-white font-black uppercase text-sm tracking-widest mb-3">La Formula dei KM Virtuali</h3>
+            <h3 className="text-white font-black uppercase text-sm tracking-widest mb-3">La Formula dei Kmv</h3>
             <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mb-4">
-              <p className="text-xl font-mono text-blue-400 text-center font-black">KM Totali × % Presenze = KM Virtuali</p>
+              <p className="text-xl font-mono text-blue-400 text-center font-black">Km Totali × % Presenze = Kmv</p>
             </div>
             <ul className="space-y-4 text-sm leading-relaxed">
               <li className="flex gap-4">
-                <span className="text-white font-bold shrink-0">KM Totali:</span>
+                <span className="text-white font-bold shrink-0">Km Totali:</span>
                 <span className="flex-1 min-w-0">I chilometri dichiarati durante ogni allenamento in cui sei presente.</span>
               </li>
               <li className="flex gap-4">
                 <span className="text-white font-bold shrink-0">% Presenze:</span>
-                <span className="flex-1 min-w-0">Calcolata su base <span className="text-blue-400 font-bold">6 allenamenti a settimana</span>. Più sei costante, più i tuoi KM reali diventano KM virtuali validi per il trofeo.</span>
+                <span className="flex-1 min-w-0">Calcolata su base <span className="text-blue-400 font-bold">6 allenamenti a settimana</span>. Più sei costante, più i tuoi Km reali diventano Kmv validi per il trofeo.</span>
               </li>
 
             </ul>

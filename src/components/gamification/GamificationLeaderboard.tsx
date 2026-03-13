@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Trophy, Medal, Star, User, Navigation, ChevronRight, Hash } from 'lucide-react';
+import { Search, Trophy, Medal, Star, User, Navigation } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 
 interface LeaderboardEntry {
@@ -20,7 +20,6 @@ export default function GamificationLeaderboard({ userId }: GamificationLeaderbo
   const [activeTab, setActiveTab] = useState<'leg' | 'total'>('leg');
   const [searchTerm, setSearchTerm] = useState('');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [fullEntries, setFullEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [legs, setLegs] = useState<any[]>([]);
 
@@ -133,7 +132,7 @@ export default function GamificationLeaderboard({ userId }: GamificationLeaderbo
               <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 <th className="px-6 py-2">Pos</th>
                 <th className="px-6 py-2">Atleta</th>
-                {activeTab === 'leg' && <th className="px-6 py-2 text-right">Km Virtuali</th>}
+                {activeTab === 'leg' && <th className="px-6 py-2 text-right">Kmv</th>}
                 {activeTab === 'total' && (
                   <>
                     {legs.map(leg => (
@@ -181,7 +180,7 @@ export default function GamificationLeaderboard({ userId }: GamificationLeaderbo
                       <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-xs italic ${
                         entry.is_me ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
                       }`}>
-                        {entry.virtual_km.toFixed(1)} km
+                        {entry.virtual_km.toFixed(1)} Kmv
                       </div>
                     </td>
                   )}

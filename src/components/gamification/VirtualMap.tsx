@@ -128,7 +128,7 @@ export default function VirtualMap({ currentLegIndex, athletes }: VirtualMapProp
             >
               <Popup>
                 <div className="font-bold text-sm">{a.name}</div>
-                <div className="text-xs text-slate-500">{a.virtual_km.toFixed(1)} km virtuali</div>
+                <div className="text-xs text-slate-500">{a.virtual_km.toFixed(1)} Kmv</div>
               </Popup>
             </Marker>
           );
