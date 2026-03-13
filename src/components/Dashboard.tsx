@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { format, addDays, subDays } from 'date-fns';
 import { it } from 'date-fns/locale/it';
+import GamificationCard from './gamification/GamificationCard';
 
 interface DashboardProps {
   setCurrentView: (v: ViewType) => void;
@@ -676,6 +677,9 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
               <p className="text-xs text-slate-400 font-medium">JPG, PNG, PDF (Max 5MB)</p>
             </div>
           </div>
+
+          {/* 5. GAMIFICATION (NEW) */}
+          <GamificationCard userId={userId} />
         </div>
       )}
       {/* Modal Zoom Tesserino */}
