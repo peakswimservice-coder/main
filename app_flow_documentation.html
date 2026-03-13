@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappa dell'App - PeakSwim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; margin: 0; padding: 0; }
+        .iphone-frame {
+            width: 380px;
+            height: 750px;
+            background: white;
+            border: 14px solid #0f172a;
+            border-radius: 45px;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 30px;
+            background: #0f172a;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+            z-index: 50;
+        }
+        .node { position: absolute; display: flex; flex-direction: column; align-items: center; }
+        path.line {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 4;
+            stroke-dasharray: 8 8;
+            stroke-linecap: round;
+        }
+        
+        /* Wireframe Styles */
+        .wf-header { background: #1e293b; color: white; padding: 45px 25px 25px; text-align: center; font-weight: 900; font-size: 1.1rem; }
+        .wf-body { padding: 20px; flex: 1; background: #f1f5f9; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        .wf-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .wf-nav { background: white; border-top: 1px solid #e2e8f0; padding: 20px; display: flex; justify-content: space-around; padding-bottom: 30px; }
+        .wf-btn { background: #2563eb; color: white; border-radius: 14px; padding: 14px; text-align: center; font-weight: bold; font-size: 14px; }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .controls button {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .controls button:hover { background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <button id="zoomIn"><i data-lucide="zoom-in"></i></button>
+    <button id="zoomOut"><i data-lucide="zoom-out"></i></button>
+    <button id="reset" class="!w-auto px-4">Reset</button>
+</div>
+
+<!-- INFO OVERLAY -->
+<div class="fixed top-6 left-6 z-50 bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl max-w-sm border border-slate-100">
+    <h1 class="text-2xl font-black text-slate-800 mb-2">Mappa dell'App</h1>
+    <p class="text-sm text-slate-500 mb-4">Trascina per spostarti (Pan) e usa i bottoni o la rotellina per lo Zoom.</p>
+</div>
+
+<div id="wrapper" class="w-screen h-screen bg-slate-100 cursor-grab active:cursor-grabbing">
+    <!-- CANVAS -->
+    <div id="canvas" class="relative w-[4000px] h-[3400px]">
+        
+        <!-- SVG lines drawn via JS -->
+        <svg id="svg-layer" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+            <!-- Automatically filled -->
+        </svg>
+
+        <!-- 1. LOGIN -->
+        <div id="node-login" class="node" style="left: 200px; top: 1300px;" data-to="node-coach,node-athlete">
+            <div class="mb-4 text-center font-bold text-slate-700 text-xl bg-white px-4 py-2 rounded-full shadow-sm">1. Autenticazione</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="flex-1 bg-white flex flex-col items-center justify-center p-8 text-center">
+                    <i data-lucide="waves" class="w-20 h-20 text-blue-600 mb-6 mx-auto"></i>
+                    <h2 class="text-4xl font-black italic text-slate-900 mb-10">PEAKSWIM</h2>
+                    <div class="w-full bg-slate-100 h-14 rounded-2xl mb-4"></div>
+                    <div class="w-full bg-slate-100 h-14 rounded-2xl mb-8"></div>
+                    <div class="w-full wf-btn text-lg">Accedi</div>
+                    <p class="text-[12px] text-slate-400 mt-6">Gestione Ruoli: Admin, Coach, Atleta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. COACH DASHBOARD -->
+        <div id="node-coach" class="node" style="left: 900px; top: 500px;" data-to="node-training,node-athletes,node-groups">
+            <div class="mb-4 text-center font-bold text-blue-600 text-xl bg-blue-50/80 backdrop-blur px-4 py-2 rounded-full border border-blue-200 shadow-sm">2A. Dashboard Coach</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header flex justify-between items-center">
+                    <span>Ciao, Coach!</span>
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </div>
+                <div class="wf-body">
+                    <div class="wf-card border-l-4 border-blue-500">
+                        <h4 class="font-bold text-lg">Sessione di Oggi</h4>
+                        <p class="text-sm text-slate-500">10 Atleti • Fondo</p>
+                    </div>
+                    <!-- Card Gamification Coach -->
+                    <div class="wf-card bg-amber-50 border border-amber-200 mt-4 outline-dashed outline-2 outline-amber-300 outline-offset-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="beer" class="w-6 h-6 text-amber-600"></i>
+                            <h4 class="font-bold text-md italic">Trofeo della Birra</h4>
+                        </div>
+                        <div class="w-full h-24 bg-amber-100 rounded-xl flex items-center justify-center text-sm text-amber-600 font-bold">Mappa & Top 5</div>
+                    </div>
+                </div>
+                <div class="wf-nav">
+                    <i data-lucide="calendar-days" class="w-8 h-8 text-blue-600"></i>
+                    <i data-lucide="dumbbell" class="w-8 h-8 text-slate-400"></i>
+                    <i data-lucide="users" class="w-8 h-8 text-slate-400"></i>
+                    <i data-lucide="folder" class="w-8 h-8 text-slate-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. COACH NAV: TRAINING BUILDER -->
+        <div id="node-training" class="node" style="left: 1700px; top: 100px;">
+            <div class="mb-4 text-center font-bold text-slate-700 text-xl bg-white px-4 py-2 rounded-full shadow-sm">3. Costruttore Allenamenti</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header">Nuovo Allenamento</div>
+                <div class="wf-body">
+                    <div class="wf-card border-2 border-blue-500 bg-blue-50 flex items-center justify-center h-24">
+                        <span class="font-bold text-blue-600">+ Aggiungi Blocco</span>
+                    </div>
+                    <div class="wf-card bg-slate-50 border border-slate-200">
+                        <h4 class="font-bold text-md">Riscaldamento</h4>
+                        <p class="text-sm text-slate-500 mt-1">400 SL, 200 MX</p>
+                    </div>
+                    <div class="wf-card bg-red-50 border border-red-200">
+                        <h4 class="font-bold text-md text-red-700">Lavoro Centrale (C1)</h4>
+                        <p class="text-sm text-red-600 mt-1">8 x 50 Max</p>
+                    </div>
+                    <div class="wf-btn mt-auto py-4">Salva e Condividi PDF</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. COACH NAV: ATHLETES -->
+        <div id="node-athletes" class="node" style="left: 1700px; top: 950px;">
+            <div class="mb-4 text-center font-bold text-slate-700 text-xl bg-white px-4 py-2 rounded-full shadow-sm">4. Lista Atleti & Coda Approvazioni</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header">Atleti</div>
+                <div class="wf-body">
+                    <div class="w-full bg-slate-200 h-10 rounded-xl mb-4 flex items-center px-4"><i data-lucide="search" class="w-5 h-5 text-slate-400"></i></div>
+                    <div class="wf-card flex items-center gap-4">
+                        <div class="w-12 h-12 bg-slate-200 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-md">Mario Rossi</h4>
+                            <p class="text-xs text-green-600 font-bold mt-1">Gruppo A • Idoneo</p>
+                        </div>
+                    </div>
+                    <div class="wf-card flex items-center gap-4">
+                        <div class="w-12 h-12 bg-slate-200 rounded-full"></div>
+                        <div>
+                            <h4 class="font-bold text-md">Luigi Bianchi</h4>
+                            <p class="text-xs text-red-600 font-bold mt-1">Gruppo B • Scaduto</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. COACH NAV: GROUPS -->
+        <div id="node-groups" class="node" style="left: 1700px; top: 1800px;">
+            <div class="mb-4 text-center font-bold text-slate-700 text-xl bg-white px-4 py-2 rounded-full shadow-sm">5. Gestione Gruppi</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header">Gruppi</div>
+                <div class="wf-body">
+                    <div class="wf-card bg-blue-50 border border-blue-200">
+                        <h4 class="font-black text-blue-700 text-lg">GRUPPO A (Assoluti)</h4>
+                        <p class="text-sm text-blue-600 mt-2">15 Atleti</p>
+                    </div>
+                    <div class="wf-card bg-emerald-50 border border-emerald-200">
+                        <h4 class="font-black text-emerald-700 text-lg">GRUPPO B (Master)</h4>
+                        <p class="text-sm text-emerald-600 mt-2">22 Atleti</p>
+                    </div>
+                    <div class="wf-btn mt-auto bg-slate-800 py-4"><i data-lucide="plus" class="w-5 h-5 inline align-text-bottom"></i> Nuovo Gruppo</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- ATHLETE FLOW -->
+        <!-- ============================================== -->
+
+        <!-- 2B. ATHLETE DASHBOARD -->
+        <div id="node-athlete" class="node" style="left: 900px; top: 2100px;" data-to="node-games">
+            <div class="mb-4 text-center font-bold text-emerald-600 text-xl bg-emerald-50/80 backdrop-blur px-4 py-2 rounded-full border border-emerald-200 shadow-sm">2B. Dashboard Atleta</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header flex justify-between items-center bg-emerald-700">
+                    <span>Ciao, Atleta! <i data-lucide="edit-2" class="inline w-4 h-4 ml-2"></i></span>
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </div>
+                <div class="wf-body">
+                    <!-- Allenamento Card -->
+                    <div class="wf-card">
+                        <h4 class="font-black text-sm uppercase text-slate-400">Oggi</h4>
+                        <h3 class="font-black text-2xl mt-1">Lavoro di Velocità</h3>
+                        <p class="text-sm text-slate-500 mt-3 bg-slate-100 p-3 rounded-xl leading-relaxed">400 Riscaldamento<br>8x50 Max<br>200 Sciolte</p>
+                    </div>
+                    <!-- Presenze Card -->
+                    <div class="wf-card flex flex-col gap-3">
+                        <div class="flex justify-between items-center bg-slate-100 p-2 rounded-xl">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i>
+                            <span class="text-sm font-bold text-slate-700">13/03/2026</span>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <div class="p-3 bg-emerald-500 text-white rounded-xl text-center font-black text-lg shadow-lg shadow-emerald-200 mt-2">
+                            Presente (5.5 Km)
+                        </div>
+                    </div>
+                    <!-- Gamification Teaser -->
+                    <div class="wf-card bg-amber-50 border-2 border-amber-200 relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 opacity-10"><i data-lucide="beer" class="w-24 h-24"></i></div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-black italic text-amber-800 text-lg">Trofeo della Birra</h4>
+                            <span class="bg-black text-white text-xs px-3 py-1.5 rounded-full font-bold">#4</span>
+                        </div>
+                        <div class="h-3 w-full bg-amber-100 rounded-full overflow-hidden mb-4"><div class="h-full bg-amber-500 w-2/3"></div></div>
+                        <div class="text-xs text-slate-500 text-center uppercase tracking-widest font-bold">Clicca per Mappa</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. GAMIFICATION MODAL -->
+        <div id="node-games" class="node" style="left: 1700px; top: 2100px;" data-to="node-regole">
+            <div class="mb-4 text-center font-bold text-amber-600 text-xl bg-amber-50/80 backdrop-blur px-4 py-2 rounded-full border border-amber-200 shadow-sm">6. Gamification (Mappa Google Maps & Leaderboard)</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <div class="wf-header bg-slate-900 flex justify-between">
+                    <span class="italic text-amber-500">Trofeo della Birra</span>
+                    <i data-lucide="info" class="w-6 h-6 text-slate-400"></i>
+                </div>
+                <div class="flex-1 flex flex-col bg-slate-50 gap-0">
+                    <!-- Map Area -->
+                    <div class="h-[300px] bg-blue-100 relative overflow-hidden flex items-center justify-center">
+                        <i data-lucide="map" class="w-20 h-20 text-blue-800/20 absolute"></i>
+                        <path d="M 0 50 Q 150 150 320 50" stroke="#3b82f6" stroke-width="4" fill="none" stroke-dasharray="5 5"></path>
+                        <div class="absolute top-1/2 left-1/3 w-6 h-6 bg-red-500 rounded-full border-4 border-white shadow-xl isolate">
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs font-bold whitespace-nowrap">Tu</div>
+                        </div>
+                    </div>
+                    <!-- Mini Leaderboard -->
+                    <div class="p-6 bg-white flex-1 rounded-t-3xl -mt-6 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+                        <h4 class="font-black text-sm text-slate-400 uppercase tracking-widest mb-4">Tappa Corrente - Top 5</h4>
+                        <div class="flex items-center justify-between py-3 border-b border-slate-100">
+                            <span class="font-bold text-md"><span class="italic text-slate-300 mr-3">#1</span> Marco D.</span>
+                            <span class="font-black text-blue-600 text-sm">450.5 Kmv</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-slate-100 bg-blue-50/50 -mx-6 px-6">
+                            <span class="font-bold text-md"><span class="italic text-slate-300 mr-3">#4</span> Tu</span>
+                            <span class="font-black text-blue-600 text-sm">320.0 Kmv</span>
+                        </div>
+                        <div class="wf-btn bg-slate-800 mt-6 py-4 rounded-2xl w-full">Vedi Classifica Generale</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. GAMIFICATION REGOLE -->
+        <div id="node-regole" class="node" style="left: 2500px; top: 2100px;">
+            <div class="mb-4 text-center font-bold text-slate-700 text-xl bg-white px-4 py-2 rounded-full shadow-sm">7. Modale Regole & Storico Integrale</div>
+            <div class="iphone-frame">
+                <div class="notch"></div>
+                <!-- Simulating a modal over a dark background -->
+                <div class="flex-1 bg-slate-900/80 p-6 flex flex-col justify-end">
+                    <div class="bg-white h-[600px] rounded-t-[40px] p-6 shadow-2xl flex flex-col pt-8 relative">
+                        <button class="absolute top-4 right-4 p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-slate-500"></i></button>
+                        
+                        <div class="flex gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6 flex-shrink-0">
+                            <div class="flex-1 text-center py-3 text-sm font-bold bg-white rounded-xl shadow-sm text-blue-600">Generale</div>
+                            <div class="flex-1 text-center py-3 text-sm font-bold text-slate-400">Regolamento</div>
+                        </div>
+                        <div class="overflow-y-auto flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                            <table class="w-full text-sm text-left">
+                                <tr class="text-slate-400 font-bold border-b-2 border-slate-200"><th class="pb-3">Pos</th><th>Atleta</th><th class="text-center">T1 Punti</th><th class="text-right">Tot</h4></tr>
+                                <tr class="border-b border-slate-100"><td class="py-4 font-black italic text-slate-300"># 1</td><td class="font-bold text-slate-700">Mario Rossi</td><td class="text-slate-400 text-center font-mono">50</td><td class="font-black text-blue-600 text-right text-lg">50</td></tr>
+                                <tr class="border-b border-transparent bg-blue-100 -mx-4 px-4 block w-[calc(100%+32px)] rounded-xl relative -left-4"><td class="py-4 font-black italic text-blue-300 w-12 inline-block ml-4"># 4</td><td class="font-bold text-blue-900 inline-block w-24">Tu</td><td class="text-blue-500 font-mono inline-block text-center w-16">30</td><td class="font-black text-blue-600 inline-block text-right w-16 text-lg">30</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    // Initialize Panzoom
+    const element = document.getElementById('canvas');
+    const panzoom = Panzoom(element, {
+        maxScale: 2,
+        minScale: 0.1,
+        startScale: 0.4,
+        startX: -600,
+        startY: -100,
+        animate: true,
+        step: 0.1
+    });
+
+    // Event Listeners for Controls
+    element.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
+    document.getElementById('zoomIn').addEventListener('click', panzoom.zoomIn);
+    document.getElementById('zoomOut').addEventListener('click', panzoom.zoomOut);
+    document.getElementById('reset').addEventListener('click', () => {
+        panzoom.reset();
+        setTimeout(() => panzoom.pan(-600, -100), 0);
+        setTimeout(() => panzoom.zoom(0.4), 0);
+    });
+
+    // Allow scrolling within the canvas lists without panning the entire board
+    document.querySelectorAll('.overflow-y-auto, .wf-body').forEach(el => {
+        el.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: false });
+    });
+
+    // Draw SVG Lines dynamically based on coordinates
+    function drawConnections() {
+        const svg = document.getElementById('svg-layer');
+        let linesHTML = `
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                </marker>
+            </defs>
+        `;
+        
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach(node => {
+            const targetsStr = node.getAttribute('data-to');
+            if (!targetsStr) return;
+            
+            const targets = targetsStr.split(',');
+            targets.forEach(targetId => {
+                const targetNode = document.getElementById(targetId);
+                if (!targetNode) return;
+                
+                // Calculate centers or connecting points
+                const x1 = node.offsetLeft + node.offsetWidth + 20; // 20px padding offset
+                const y1 = node.offsetTop + node.offsetHeight / 2;
+                
+                const x2 = targetNode.offsetLeft - 20;
+                const y2 = targetNode.offsetTop + targetNode.offsetHeight / 2;
+                
+                // Curvature offset (bezier control points)
+                const cX1 = x1 + 300;
+                const cX2 = x2 - 300;
+                
+                linesHTML += `<path class="line" d="M ${x1} ${y1} C ${cX1} ${y1}, ${cX2} ${y2}, ${x2} ${y2}" marker-end="url(#arrow)" />`;
+            });
+        });
+        
+        svg.innerHTML = linesHTML;
+    }
+
+    // Give browser a tick to render elements before drawing lines
+    setTimeout(drawConnections, 100);
+</script>
+</body>
+</html>

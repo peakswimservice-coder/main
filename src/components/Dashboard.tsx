@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, Image as ImageIcon, Eye, Search } from 'lucide-react';
+import { Users, CheckCircle2, Droplets, Calendar, Share2, Check, X, Activity, ChevronLeft, ChevronRight, Upload, Image as ImageIcon, Eye, Search, Edit2 } from 'lucide-react';
 import type { ViewType, UserRole } from '../App';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -14,6 +14,9 @@ interface DashboardProps {
 
 export default function Dashboard({ setCurrentView, userRole = 'coach', userId }: DashboardProps) {
   const [coachName, setCoachName] = useState<string>('');
+  const [athleteName, setAthleteName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
   const [pendingAthletes, setPendingAthletes] = useState<any[]>([]);
   const [activeAthletes, setActiveAthletes] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
@@ -48,8 +51,9 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
         const { data } = await supabase.from('coaches').select('full_name').eq('email', email).maybeSingle();
         if (data?.full_name) setCoachName(data.full_name);
       } else if (userRole === 'athlete' && userId) {
-        const { data } = await supabase.from('athletes').select('group_id, federation_card_url, groups(*)').eq('id', userId).maybeSingle();
+        const { data } = await supabase.from('athletes').select('full_name, group_id, federation_card_url, groups(*)').eq('id', userId).maybeSingle();
         if (data) {
+          if (data.full_name) setAthleteName(data.full_name);
           if (data.groups) {
             currentAthleteGroup = data.groups;
           }
@@ -144,6 +148,18 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
 
     return () => clearTimeout(timer);
   }, [attendanceKm, attendance, userRole]);
+
+  const handleUpdateName = async () => {
+    if (!editNameValue.trim() || !userId) return;
+    try {
+      const { error } = await supabase.from('athletes').update({ full_name: editNameValue }).eq('id', userId);
+      if (error) throw error;
+      setAthleteName(editNameValue);
+      setIsEditingName(false);
+    } catch (e) {
+      alert("Errore salvataggio nome");
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -349,8 +365,30 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
       <header className="mb-8">
         <div className="flex items-center space-x-4 mb-2">
           <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            {userRole === 'athlete' ? 'Ciao!' : `Bentornato${coachName ? `, ${coachName}` : ''}`}
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+            {userRole === 'athlete' ? (
+              isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    value={editNameValue} 
+                    onChange={e => setEditNameValue(e.target.value)} 
+                    className="border-b-2 border-blue-400 bg-transparent outline-none focus:border-blue-600 px-1 py-0.5 text-3xl font-bold max-w-[200px] md:max-w-xs"
+                    autoFocus
+                    onKeyDown={e => e.key === 'Enter' && handleUpdateName()}
+                  />
+                  <button onClick={handleUpdateName} className="p-2 bg-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><Check className="w-5 h-5" /></button>
+                  <button onClick={() => setIsEditingName(false)} className="p-2 bg-slate-100 text-slate-500 rounded-xl hover:bg-slate-500 hover:text-white transition-all shadow-sm"><X className="w-5 h-5" /></button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 group">
+                  <span>Ciao, {athleteName ? athleteName.split(' ')[0] : 'Atleta'}!</span>
+                  <button onClick={() => { setEditNameValue(athleteName); setIsEditingName(true); }} className="p-2 text-slate-300 opacity-100 md:opacity-0 group-hover:opacity-100 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mb-1">
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                </div>
+              )
+            ) : `Bentornato${coachName ? `, ${coachName}` : ''}`}
           </h1>
         </div>
         <p className="text-slate-500 text-lg">
