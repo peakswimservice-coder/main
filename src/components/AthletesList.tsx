@@ -244,6 +244,21 @@ export default function AthletesList() {
     }
   };
 
+  const handleToggleDelegation = async (athleteId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('athletes')
+        .update({ is_delegated: !currentStatus })
+        .eq('id', athleteId);
+
+      if (error) throw error;
+      if (session) fetchData(session);
+    } catch (err) {
+      console.error('Errore durante l\'aggiornamento della delega:', err);
+      alert('Errore durante l\'aggiornamento della delega.');
+    }
+  };
+
   const handleViewCard = async (url: string) => {
     if (!url) {
       alert("L'atleta non ha ancora caricato un tesserino.");
@@ -429,6 +444,22 @@ export default function AthletesList() {
                             {athlete.groups?.name || 'Nessun Gruppo'}
                           </span>
                         )}
+                      </div>
+
+                      <div className="flex flex-col items-center gap-1 group/delegate">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Delega</span>
+                        <button
+                          onClick={() => handleToggleDelegation(athlete.id, athlete.is_delegated)}
+                          className={`w-10 h-5 rounded-full relative transition-colors duration-200 focus:outline-none ${
+                            athlete.is_delegated ? 'bg-blue-600' : 'bg-slate-200'
+                          }`}
+                        >
+                          <div
+                            className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform duration-200 ${
+                              athlete.is_delegated ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
                       </div>
                       
                       <div className="shrink-0 text-right relative">

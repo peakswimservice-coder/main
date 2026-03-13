@@ -10,7 +10,7 @@ const supabase = createClient(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const { type, coachId, athleteName, athleteId, status, groupName, date, groupId } = req.body;
+  const { type, coachId, athleteName, athleteId, status, groupName, date, groupId, raceName } = req.body;
   const APP_ID = (process.env.VITE_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || "").trim();
   const API_KEY = (process.env.VITE_ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_REST_API_KEY || "").trim();
 
@@ -39,6 +39,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? `Il coach ti ha accettato nel gruppo ${groupName || ''}!`
       : `Il coach non ha potuto accettare la tua richiesta.`;
     notificationPayload.data = { type, status };
+  }
+  else if (type === 'race_update') {
+    if (!groupId) {
+      return res.status(400).json({ error: 'groupId mancante per notifica gara' });
+    }
+
+    const { data: athletes, error: athleteError } = await supabase
+      .from('athletes')
+      .select('id')
+      .eq('group_id', groupId)
+      .eq('status', 'active');
+
+    const athleteIds = (athletes || []).map(a => String(a.id));
+
+    if (athleteIds.length === 0) {
+      return res.status(200).json({ message: "Nessun atleta da notificare" });
+    }
+
+    notificationPayload.include_external_user_ids = athleteIds;
+    notificationPayload.headings.it = "PeakSwim: Nuova Gara / Modifica";
+    notificationPayload.contents.it = `Aggiornamento calendario: ${raceName} (${date}) per il gruppo ${groupName || ''}.`;
+    notificationPayload.data = { groupId, date, type };
   }
   else {
     // Default: Nuovo Allenamento. Target: Atleti del gruppo

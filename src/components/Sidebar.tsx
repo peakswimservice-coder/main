@@ -116,7 +116,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['coach', 'athlete'] },
     { id: 'athletes', label: 'Atleti', icon: Users, roles: ['coach'] },
     { id: 'training', label: 'Allenamenti', icon: Activity, roles: ['coach', 'athlete'] },
-    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach', 'athlete'], isMock: true },
+    { id: 'events', label: 'Gare / Eventi', icon: Calendar, roles: ['coach', 'athlete'] },
     { id: 'messages', label: 'Bacheca', icon: MessageSquare, roles: ['coach', 'athlete'], isMock: true },
     { id: 'admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { id: 'company_management', label: 'Società', icon: Settings, roles: ['company_manager'] },
@@ -180,7 +180,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                <span className={item.isMock ? 'line-through opacity-60' : ''}>{item.label}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
@@ -210,7 +210,7 @@ export default function Sidebar({ currentView, setCurrentView, userEmail, userRo
             return (
               <button key={item.id} onClick={() => setCurrentView(item.id)} className={`flex flex-col items-center justify-center flex-1 py-1 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
                 <div className={`p-1.5 rounded-xl ${isActive ? 'bg-blue-50' : ''}`}><Icon className="w-6 h-6" /></div>
-                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''} ${item.isMock ? 'line-through opacity-60' : ''}`}>{item.label.split(' ')[0]}</span>
+                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-700' : ''}`}>{item.label.split(' ')[0]}</span>
               </button>
             );
           })}
