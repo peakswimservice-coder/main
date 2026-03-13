@@ -7,6 +7,7 @@ interface Coach {
   email: string;
   full_name: string | null;
   company_id: string;
+  invite_code: string | null;
   last_active_at: string | null;
   athlete_count?: number;
 }
@@ -17,6 +18,8 @@ interface Athlete {
   full_name: string | null;
   status: string;
   last_active_at: string | null;
+  created_at: string;
+  groups?: { name: string } | { name: string }[] | null;
 }
 
 interface Company {
@@ -77,7 +80,7 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
     setLoadingAthletes(coachId);
     const { data, error } = await supabase
       .from('athletes')
-      .select('id, email, full_name, status, last_active_at')
+      .select('id, email, full_name, status, last_active_at, created_at, groups(name)')
       .eq('coach_id', coachId)
       .order('full_name');
     
@@ -262,6 +265,11 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
                           </span>
                         </div>
                         <p className="text-sm text-slate-500">{coach.email}</p>
+                        {coach.invite_code && (
+                          <p className="text-[10px] font-black tracking-widest text-indigo-500 uppercase mt-1 bg-indigo-50 px-2 py-0.5 rounded inline-block">
+                            Codice Invito: {coach.invite_code}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -341,8 +349,19 @@ export default function CompanyPanel({ userEmail }: { userEmail: string }) {
                                   ) : (
                                     <Clock className="w-3 h-3 text-amber-500" />
                                   )}
+                                  {athlete.groups && (
+                                     <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                        {Array.isArray(athlete.groups) ? athlete.groups[0]?.name : athlete.groups.name}
+                                     </span>
+                                  )}
                                 </div>
-                                <p className="text-[11px] text-slate-400 font-medium">{athlete.email}</p>
+                                <div className="flex items-center gap-2 mt-0.5 mb-0.5">
+                                   <p className="text-[11px] text-slate-400 font-medium">{athlete.email}</p>
+                                   <span className="text-[10px] text-slate-300">•</span>
+                                   <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">
+                                     Iscrito il: {new Date(athlete.created_at).toLocaleDateString('it-IT')}
+                                   </p>
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">

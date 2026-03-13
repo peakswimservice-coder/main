@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuale d'Uso - PeakSwim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; scroll-behavior: smooth; }
+        .section-header { position: sticky; top: 0; background: white; padding-block: 1rem; z-index: 10; border-bottom: 2px solid #f1f5f9; margin-bottom: 1.5rem; }
+        .toc-link { display: block; padding: 0.5rem 1rem; color: #475569; border-left: 2px solid transparent; transition: all 0.2s; }
+        .toc-link:hover { color: #2563eb; border-left-color: #2563eb; background: #f8fafc; }
+        .screenshot-placeholder { 
+            width: 100%; height: 350px; background: #f8fafc; border: 2px dashed #cbd5e1; 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            color: #94a3b8; font-weight: bold; margin: 1.5rem 0; font-size: 0.875rem; 
+            flex-direction: column; gap: 0.5rem;
+        }
+        .prose-custom p { margin-bottom: 1rem; color: #334155; line-height: 1.7; }
+        .prose-custom ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; color: #334155; }
+        .prose-custom li { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- Header / Cover -->
+    <header class="bg-slate-900 text-white py-16 px-6 lg:px-20 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==')]"></div>
+        <div class="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+            <div>
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="bg-blue-600 p-3 rounded-2xl shadow-lg">
+                        <i data-lucide="waves" class="w-10 h-10 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl md:text-5xl font-black italic tracking-tight">PEAKSWIM</h1>
+                        <p class="text-blue-400 font-bold tracking-widest uppercase text-sm mt-1">Gestione Avanzata Nuoto</p>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">Manuale d'Uso Ufficiale</h2>
+                <p class="text-slate-400 max-w-xl text-lg mb-6">Documentazione dettagliata dei flussi operativi, suddivisa per ruoli di sistema: System Admin, Referente Società, Coach e Atleta.</p>
+                
+                <div class="inline-flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-full px-5 py-2.5">
+                    <i data-lucide="code-2" class="w-5 h-5 text-emerald-400"></i>
+                    <span class="text-sm font-medium text-slate-300">Sviluppato da <strong class="text-white">Fabio Nicora</strong></span>
+                </div>
+            </div>
+            
+            <div class="hidden md:block w-72 h-96 bg-slate-800 rounded-[2.5rem] border-8 border-slate-700 shadow-2xl relative overflow-hidden flex-shrink-0">
+                <!-- Mockup finto iPhone -->
+                <div class="absolute top-0 inset-x-0 h-6 bg-slate-700 flex justify-center rounded-b-xl w-32 mx-auto"></div>
+                <div class="h-full w-full bg-blue-600 flex flex-col pt-12 p-6">
+                    <div class="w-1/2 h-2 bg-white/20 rounded-full mb-4"></div>
+                    <div class="w-full h-24 bg-white/10 rounded-xl mb-4"></div>
+                    <div class="w-full h-16 bg-white/10 rounded-xl mb-2"></div>
+                    <div class="w-full h-16 bg-white/10 rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-6 lg:px-20 py-12 flex flex-col lg:flex-row gap-12 items-start relative">
+        
+        <!-- Sidebar / Indice -->
+        <aside class="w-full lg:w-64 flex-shrink-0 lg:sticky lg:top-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h3 class="font-black text-slate-400 uppercase tracking-widest text-xs mb-4">Indice Contenuti</h3>
+            <nav class="space-y-1">
+                <a href="#intro" class="toc-link rounded-lg text-sm font-medium">Introduzione</a>
+                <a href="#admin" class="toc-link rounded-lg text-sm font-medium">1. System Admin</a>
+                <a href="#referente" class="toc-link rounded-lg text-sm font-medium">2. Referente Società</a>
+                <a href="#coach" class="toc-link rounded-lg text-sm font-medium">3. Coach (Allenatore)</a>
+                <a href="#atleta" class="toc-link rounded-lg text-sm font-medium">4. Atleta</a>
+            </nav>
+            <div class="mt-8 pt-6 border-t border-slate-100">
+                <p class="text-[10px] text-slate-400 text-center uppercase font-bold">Versione 1.0.0</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-8 lg:p-12 prose-custom">
+            
+            <section id="intro" class="mb-16">
+                <div class="section-header">
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i data-lucide="info" class="w-8 h-8 text-blue-600"></i> Introduzione
+                    </h2>
+                </div>
+                <p>Benvenuto nel manuale d'uso di <strong>PeakSwim</strong>. Questa applicazione è stata progettata per digitalizzare e semplificare la gestione delle squadre di nuoto, integrando strumenti per la stesura degli allenamenti, la verifica dei tesserini federali e la creazione di percorsi di <em>Gamification</em> per aumentare il coinvolgimento degli atleti.</p>
+                <p>L'accesso all'applicazione si basa su un <strong>log-in unificato</strong>, dal quale il sistema riconosce automaticamente il ruolo dell'utente smistandolo verso la dashboard corretta.</p>
+                <div class="screenshot-placeholder">
+                    <i data-lucide="smartphone" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Schermata di Login Unificata</span>
+                </div>
+            </section>
+
+            <!-- 1. ADMIN DI SISTEMA -->
+            <section id="admin" class="mb-16">
+                <div class="section-header">
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i data-lucide="shield" class="w-8 h-8 text-indigo-600"></i> 1. System Admin
+                    </h2>
+                </div>
+                <p>Il System Admin (Master) è l'utenza con i massimi privilegi, tipicamente gestita dallo sviluppatore o dal proprietario della piattaforma.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-4">Funzionalità Chiave</h3>
+                <ul>
+                    <li><strong>Gestione Società:</strong> Puoi registrare nuovi club di nuoto (es. "Nuoto Club Milano") definendone i dettagli fiscali e lo stato (Attiva/Sospesa).</li>
+                    <li><strong>Invito Referenti:</strong> Generazione di inviti per i direttori sportivi, i quali diventeranno i "Referenti" della società.</li>
+                    <li><strong>Pannello Analytics:</strong> Cliccando sull'icona a forma di grafico, hai una panoramica globale (Quanti atleti, quanti coach e log di utilizzo in tempo reale).</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="bar-chart-2" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Dashboard Admin & Analytics</span>
+                </div>
+            </section>
+
+            <!-- 2. REFERENTE -->
+            <section id="referente" class="mb-16">
+                <div class="section-header">
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i data-lucide="building" class="w-8 h-8 text-emerald-600"></i> 2. Referente Società
+                    </h2>
+                </div>
+                <p>Il Referente è l'amministratore della singola associazione sportiva. Il suo compito è puramente organizzativo e burocratico.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-4">Funzionalità Chiave</h3>
+                <ul>
+                    <li><strong>Invito Allenatori (Coach):</strong> Dalla pagina principale, il referente può cliccare su "Crea Invito" per generare un link univoco da inviare ai propri coach.</li>
+                    <li><strong>Gestione Burocratica (Tesserini):</strong> Il referente ha accesso a tutti gli atleti iscritti sotto la propria società. Può verificare la validità del certificato medico e scaricare le copie in PDF del <strong>Tesserino Federale</strong>.</li>
+                    <li><strong>Sospensione Profili:</strong> In caso di non conformità dei documenti, il referente può limitare l'accesso di un atleta.</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="users" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Schermata "Elenco Allenatori / Tesserini" (Referente)</span>
+                </div>
+            </section>
+
+            <!-- 3. COACH -->
+            <section id="coach" class="mb-16">
+                <div class="section-header">
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i data-lucide="whistle" class="w-8 h-8 text-blue-600"></i> 3. Coach (Allenatore)
+                    </h2>
+                </div>
+                <p>Il Coach è il cuore operativo dell'App. Gestisce gli allenamenti a bordo vasca e monitora il gruppo.</p>
+                
+                <h3 class="text-xl font-bold mt-8 mb-4">Gestione Gruppi e Atleti</h3>
+                <ul>
+                    <li><strong>Coda di Approvazione:</strong> Quando un atleta si registra usando il codice del Coach, appare nella "Coda". Il coach lo accetta e gli assegna obbligatoriamente un colore/gruppo (es. Gruppo Master - Verde).</li>
+                    <li><strong>Registro Presenze:</strong> Dalla lista del gruppo, l'allenatore può flaggare gli atleti presenti per il giorno corrente.</li>
+                    <li><strong>Atleti Delegati:</strong> Il coach può selezionare atleti fidati e abilitarli come "Delegati" alla creazione degli eventi (Gare).</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="users" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Gestione Atleti e Coda di Approvazione</span>
+                </div>
+
+                <h3 class="text-xl font-bold mt-8 mb-4">Costruttore Allenamenti (Training Builder)</h3>
+                <p>Nella sezione Calendario, il coach può cliccare su "Nuovo Allenamento".</p>
+                <ul>
+                    <li>L'interfaccia a blocchi permette di separare <em>Riscaldamento</em> (giallo), <em>Lavoro Centrale</em> (rosso) e <em>Sciolte</em> (blu).</li>
+                    <li>A fine compilazione, tramite il tasto di <strong>Condivisione</strong>, l'app compila automaticamente un PDF professionale inviabile via WhatsApp/Email.</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="dumbbell" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Training Builder a blocchi colorati e export PDF</span>
+                </div>
+
+                <h3 class="text-xl font-bold mt-8 mb-4">Menzione Gamification</h3>
+                <p>Il coach può visualizzare il widget del "Trofeo della Birra" per monitorare l'andamento virtuale della squadra dall'esterno senza partecipare direttamente.</p>
+            </section>
+
+            <!-- 4. ATLETA -->
+            <section id="atleta" class="mb-16">
+                <div class="section-header">
+                    <h2 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                        <i data-lucide="user" class="w-8 h-8 text-amber-500"></i> 4. Atleta
+                    </h2>
+                </div>
+                <p>L'Atleta usa PeakSwim per visionare i propri allenamenti, iscriversi alle gare e divertirsi con la Gamification.</p>
+
+                <h3 class="text-xl font-bold mt-8 mb-4">Funzionalità Chiave</h3>
+                <ul>
+                    <li><strong>Modifica Profilo:</strong> Nel saluto in Dashboard ("Ciao, Nome"), cliccando sull'icona della matita l'atleta può modificare i propri dati.</li>
+                    <li><strong>Documentazione Personale:</strong> Esiste una Card fissa dove l'atleta deve caricare (e aggiornare, in caso di scadenza) la scansione/PDF del proprio <em>Tesserino Federale</em>.</li>
+                    <li><strong>Lettura Allenamento:</strong> Se il coach ha inserito la seduta per il gruppo dell'atleta, questa compare nitidamente in dashboard.</li>
+                    <li><strong>Storico Presenze:</strong> Tramite le freccette temporali (sinistra/destra), l'atleta può registrare le proprie presenze e i Chilometri (Km) nuotati anche per i giorni precedenti.</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="smartphone" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Dashboard Atleta con Presenze e Info Allenamento</span>
+                </div>
+
+                <h3 class="text-xl font-bold mt-8 mb-4">Gamification: Trofeo della Birra 🍻</h3>
+                <p>Questa funzionalità trasforma gli allenamenti in un viaggio virtuale a tappe per il Mar Tirreno.</p>
+                <ul>
+                    <li>Le presenze e i Km nuotati vengono calcolati da uno speciale algoritmo che restituisce "Kilometri Virtuali" (Kmv). L'app richiede all'atleta onestà e fiducia nell'inserimento del dato reale.</li>
+                    <li>La dashboard si aggiorna <em>in tempo reale</em> non appena l'atleta invia i km, mostrando una progressbar e l'attuale tappa della squadra.</li>
+                    <li>Aprendo il modale mappa (integrazione Google Maps), l'atleta visualizza i marker relativi agli altri componenti del gruppo attorno alla sua posizione, alimentando la sana competizione.</li>
+                    <li>C'è un apposito pulsante per aprire il "Regolamento" integrale e la Classifica Generale.</li>
+                </ul>
+
+                <div class="screenshot-placeholder">
+                    <i data-lucide="map" class="w-8 h-8 mb-2"></i>
+                    <span>Screenshot Dashboard Gamification (Google Maps Live + Leaderboard)</span>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        // TOC Highlight script
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const id = entry.target.getAttribute('id');
+                    if (entry.intersectionRatio > 0) {
+                        document.querySelectorAll('.toc-link').forEach(link => {
+                            link.classList.remove('font-black', 'text-blue-600', 'border-blue-600', 'bg-slate-50');
+                        });
+                        const activeLink = document.querySelector(`.toc-link[href="#${id}"]`);
+                        if(activeLink) {
+                            activeLink.classList.add('font-black', 'text-blue-600', 'border-blue-600', 'bg-slate-50');
+                        }
+                    }
+                });
+            }, { rootMargin: '-20% 0px -80% 0px' });
+
+            document.querySelectorAll('section').forEach((section) => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
