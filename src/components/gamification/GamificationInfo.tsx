@@ -24,7 +24,8 @@ export default function GamificationInfo() {
         </div>
         <p className="text-slate-600 leading-relaxed text-lg">
           Il <span className="font-black text-blue-600">Trofeo della Birra</span> non è una semplice competizione: è uno stimolo a superare i propri limiti, 
-          a mantenere la costanza negli allenamenti e a vivere il nuoto con il giusto spirito di <span className="font-bold">goliardia e squadra</span>.
+          a mantenere la costanza negli allenamenti e a vivere il nuoto con il giusto spirito di <span className="font-bold">goliardia e squadra</span>. 
+          Ricorda: gonfiare i Km inseriti non serve a nulla, se non a rovinare l'esperienza del gruppo! Tutto è basato sulla <span className="text-amber-600 font-bold">fiducia reciproca</span>.
         </p>
       </section>
 

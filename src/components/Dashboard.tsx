@@ -20,6 +20,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [gamificationRefresh, setGamificationRefresh] = useState(0);
   
   // Athlete Gamification & Federation Card
   const [attendance, setAttendance] = useState<any>(null);
@@ -238,6 +239,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
          
        if (error) throw error;
        setAttendanceSaved(true);
+       setGamificationRefresh(prev => prev + 1);
        setTimeout(() => setAttendanceSaved(false), 2000);
     } catch (e) {
        console.error("Error saving attendance:", e);
@@ -463,7 +465,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
             </div>
           </div>
           {/* GAMIFICATION - COACH VIEW */}
-          <GamificationCard isCoach={true} />
+          <GamificationCard isCoach={true} refreshTrigger={gamificationRefresh} />
         </>
       )}
 
@@ -542,9 +544,23 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
                   <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200"><Activity className="w-6 h-6 text-white" /></div>
                 </div>
                 
-                <p className="text-sm font-bold text-slate-400 mb-6 uppercase tracking-widest">
-                  {isToday ? 'Sei presente oggi?' : `Presenza per il ${format(selectedDate, 'dd/MM')}`}
-                </p>
+                  <div className="flex items-center justify-between mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                    <button 
+                      onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+                      className="p-2 text-slate-400 hover:bg-white hover:text-blue-600 rounded-xl hover:shadow-sm transition-all"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-sm font-black text-slate-700 uppercase tracking-widest">
+                      {isToday ? 'Oggi' : format(selectedDate, 'dd/MM/yyyy')}
+                    </span>
+                    <button 
+                      onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+                      className="p-2 text-slate-400 hover:bg-white hover:text-blue-600 rounded-xl hover:shadow-sm transition-all"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
 
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-3">
@@ -681,7 +697,7 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
           </div>
 
           {/* 5. GAMIFICATION (NEW) */}
-          <GamificationCard userId={userId} />
+          <GamificationCard userId={userId} refreshTrigger={gamificationRefresh} />
         </div>
       )}
       {/* Modal Zoom Tesserino */}

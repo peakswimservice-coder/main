@@ -7,6 +7,7 @@ import GamificationInfo from './GamificationInfo';
 interface GamificationCardProps {
   userId?: string;
   isCoach?: boolean;
+  refreshTrigger?: number;
 }
 
 interface LeaderboardEntry {
@@ -19,7 +20,7 @@ interface LeaderboardEntry {
   leg_points?: Record<number, number>;
 }
 
-export default function GamificationCard({ userId, isCoach = false }: GamificationCardProps) {
+export default function GamificationCard({ userId, isCoach = false, refreshTrigger = 0 }: GamificationCardProps) {
   const [loading, setLoading] = useState(true);
   const [currentLeg, setCurrentLeg] = useState<any>(null);
   const [legs, setLegs] = useState<any[]>([]);
@@ -68,7 +69,7 @@ export default function GamificationCard({ userId, isCoach = false }: Gamificati
     }
   };
 
-  useEffect(() => { fetchData(); }, [userId]);
+  useEffect(() => { fetchData(); }, [userId, refreshTrigger]);
 
   const legProgress = currentLeg
     ? Math.min(Math.max(((virtualKm - (currentLeg.cumulative_km - currentLeg.distance_km)) / currentLeg.distance_km) * 100, 0), 100)
