@@ -1,8 +1,8 @@
-import { Info, Beer, Pizza, Shield, Heart, Navigation, Target, Calendar, Award } from 'lucide-react';
+import { Beer, Pizza, Shield, Heart, Navigation, Target, Award } from 'lucide-react';
 
 export default function GamificationInfo() {
   return (
-    <div className="space-y-12 max-w-3xl mx-auto p-4 md:p-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+    <div className="space-y-10 max-w-2xl mx-auto p-4 md:p-8 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="text-center">
         <div className="inline-flex items-center justify-center p-5 bg-amber-100 rounded-[2.5rem] mb-6 shadow-xl shadow-amber-200/50">
           <Beer className="w-16 h-16 text-amber-600" />

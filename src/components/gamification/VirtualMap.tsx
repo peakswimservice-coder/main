@@ -1,27 +1,61 @@
-import { useState } from 'react';
+import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-interface Point {
-  x: number;
-  y: number;
-  name: string;
-}
+// Fix default marker icons for Vite/Webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
-// Adjusted PORTS to fit the new map coordinates (0-200 for better detail scale)
-const PORTS: Point[] = [
-  { name: 'Genova', x: 74, y: 35 },
-  { name: 'Elba', x: 86, y: 70 },
-  { name: 'Napoli', x: 135, y: 110 },
-  { name: 'Olbia', x: 80, y: 105 },
-  { name: 'Bastia', x: 70, y: 75 },
+// Ports coordinates [lat, lng]
+export const PORTS: { name: string; lat: number; lng: number }[] = [
+  { name: 'Genova',  lat: 44.407, lng: 8.934  },
+  { name: 'Elba',   lat: 42.760, lng: 10.257 },
+  { name: 'Napoli', lat: 40.850, lng: 14.268 },
+  { name: 'Olbia',  lat: 40.922, lng: 9.506  },
+  { name: 'Bastia', lat: 42.703, lng: 9.451  },
 ];
 
-// Simplified coastline paths for Italy and islands
-const ITALY_PATH = "M 70,30 L 75,32 L 85,35 L 95,45 L 105,60 L 115,80 L 130,100 L 140,115 L 150,135 L 165,155 L 175,170 L 160,175 L 150,165 L 140,150 L 125,130 L 100,100 L 90,85 L 80,70 L 75,60 L 70,50 L 65,40 Z";
-const SARDINIA_PATH = "M 70,100 L 85,100 L 90,110 L 85,130 L 70,135 L 65,120 Z";
-const CORSICA_PATH = "M 68,65 L 75,68 L 78,85 L 70,95 L 63,85 L 62,75 Z";
-const ELBA_PATH = "M 84,68 L 88,68 L 88,72 L 84,72 Z";
+// Cumulative distances per leg (starts at 0 after each port)
+const LEG_KM   = [190, 310, 270, 170, 200];
+const CUMUL_KM = [0, 190, 500, 770, 940, 1140];
 
-interface AthletePosition {
+// Leg colors — distinct per leg
+const LEG_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+// Create a custom marker icon
+function createIcon(color: string, size = 14) {
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px; height:${size}px;
+      background:${color};
+      border:3px solid white;
+      border-radius:50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    "></div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function positionOnRoute(km: number): [number, number] {
+  // Find which leg this km belongs to
+  let leg = 0;
+  while (leg < 4 && km > CUMUL_KM[leg + 1]) leg++;
+  const start = PORTS[leg];
+  const end   = PORTS[(leg + 1) % 5];
+  const progress = Math.min(Math.max((km - CUMUL_KM[leg]) / LEG_KM[leg], 0), 1);
+  return [
+    start.lat + (end.lat - start.lat) * progress,
+    start.lng + (end.lng - start.lng) * progress,
+  ];
+}
+
+interface AthletePos {
   id: string;
   name: string;
   virtual_km: number;
@@ -29,165 +63,77 @@ interface AthletePosition {
 }
 
 interface VirtualMapProps {
-  currentLegIndex: number; // 0 to 4
-  athletes: AthletePosition[];
+  currentLegIndex: number;
+  athletes: AthletePos[];
 }
 
-const LEG_DISTANCES = [190, 310, 270, 170, 200];
-const CUMULATIVE_DISTANCES = [0, 190, 500, 770, 940, 1140];
-
 export default function VirtualMap({ currentLegIndex, athletes }: VirtualMapProps) {
-  const [hoveredAthlete, setHoveredAthlete] = useState<string | null>(null);
-
-  const getPosOnRoute = (km: number) => {
-    let leg = 0;
-    while (leg < 5 && km > CUMULATIVE_DISTANCES[leg + 1]) {
-      leg++;
-    }
-    
-    if (leg >= 5) return PORTS[0];
-
-    const start = PORTS[leg];
-    const end = PORTS[(leg + 1) % 5];
-    const legProgress = (km - CUMULATIVE_DISTANCES[leg]) / LEG_DISTANCES[leg];
-    const clampedProgress = Math.min(Math.max(legProgress, 0), 1);
-
-    return {
-      x: start.x + (end.x - start.x) * clampedProgress,
-      y: start.y + (end.y - start.y) * clampedProgress,
-    };
-  };
+  // Build per-leg polylines
+  const legLines: [number, number][][] = PORTS.map((p, i) => [
+    [p.lat, p.lng],
+    [PORTS[(i + 1) % 5].lat, PORTS[(i + 1) % 5].lng],
+  ]);
 
   return (
-    <div className="relative w-full aspect-[4/3] bg-[#e0f2fe] rounded-[2.5rem] border border-blue-200 overflow-hidden shadow-inner">
-      <svg viewBox="0 0 200 180" className="w-full h-full drop-shadow-md">
-        <defs>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-            <feOffset dx="1" dy="1" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.3" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Landmasses */}
-        <g fill="#fef3c7" stroke="#d97706" strokeWidth="0.5" filter="url(#shadow)">
-          <path d={ITALY_PATH} />
-          <path d={SARDINIA_PATH} />
-          <path d={CORSICA_PATH} />
-          <path d={ELBA_PATH} />
-        </g>
-
-        {/* Route Path */}
-        <path
-          d={`M ${PORTS[0].x} ${PORTS[0].y} L ${PORTS[1].x} ${PORTS[1].y} L ${PORTS[2].x} ${PORTS[2].y} L ${PORTS[3].x} ${PORTS[3].y} L ${PORTS[4].x} ${PORTS[4].y} Z`}
-          fill="none"
-          stroke="#334155"
-          strokeWidth="1"
-          strokeDasharray="4,4"
-          opacity="0.3"
+    <div className="w-full rounded-3xl overflow-hidden border border-slate-200 shadow-xl" style={{ height: 380 }}>
+      <MapContainer
+        center={[42.5, 10.5]}
+        zoom={6}
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={true}
+        zoomControl={true}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        {/* Active Leg Highlight */}
-        {currentLegIndex >= 0 && currentLegIndex < 5 && (
-          <path
-            d={`M ${PORTS[currentLegIndex].x} ${PORTS[currentLegIndex].y} L ${PORTS[(currentLegIndex + 1) % 5].x} ${PORTS[(currentLegIndex + 1) % 5].y}`}
-            fill="none"
-            stroke="#2563eb"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="animate-pulse"
+        {/* Draw each leg with its color */}
+        {legLines.map((positions, i) => (
+          <Polyline
+            key={i}
+            positions={positions}
+            pathOptions={{
+              color: LEG_COLORS[i],
+              weight: i === currentLegIndex ? 5 : 2.5,
+              opacity: i === currentLegIndex ? 1 : 0.45,
+              dashArray: i === currentLegIndex ? undefined : '6,6',
+            }}
           />
-        )}
-
-        {/* Port Markers */}
-        {PORTS.map((port, i) => (
-          <g key={port.name}>
-            <circle cx={port.x} cy={port.y} r="2.5" fill="white" stroke="#2563eb" strokeWidth="1" />
-            <text 
-              x={port.x} 
-              y={port.y - 5} 
-              textAnchor="middle" 
-              className="text-[5px] font-black uppercase tracking-tighter fill-slate-700"
-            >
-              {port.name}
-            </text>
-          </g>
         ))}
 
-        {/* Athlete Markers */}
-        {athletes.map((athlete) => {
-          const pos = getPosOnRoute(athlete.virtual_km);
-          const isMe = athlete.is_me;
-          return (
-            <g 
-              key={athlete.id}
-              className="cursor-pointer transition-all duration-300"
-              onMouseEnter={() => setHoveredAthlete(athlete.id)}
-              onMouseLeave={() => setHoveredAthlete(null)}
-              onClick={() => setHoveredAthlete(athlete.id)}
-            >
-              {isMe && (
-                <circle cx={pos.x} cy={pos.y} r="6" fill="#2563eb" opacity="0.2">
-                  <animate attributeName="r" from="4" to="8" dur="2s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
-                </circle>
-              )}
-              
-              <circle 
-                cx={pos.x} 
-                cy={pos.y} 
-                r={isMe ? 2.5 : 1.8} 
-                fill={isMe ? '#ef4444' : '#3b82f6'} 
-                stroke="white"
-                strokeWidth="0.8"
-              />
+        {/* Port markers */}
+        {PORTS.map((port, i) => (
+          <Marker
+            key={port.name}
+            position={[port.lat, port.lng]}
+            icon={createIcon(i === currentLegIndex || i === (currentLegIndex + 1) % 5 ? LEG_COLORS[currentLegIndex] : '#94a3b8', 12)}
+          >
+            <Popup>
+              <strong>{port.name}</strong>
+              {i === currentLegIndex && <div className="text-xs text-blue-600">Partenza tappa attuale</div>}
+              {i === (currentLegIndex + 1) % 5 && <div className="text-xs text-emerald-600">Arrivo tappa attuale</div>}
+            </Popup>
+          </Marker>
+        ))}
 
-              {/* Enhanced Tooltip */}
-              {(hoveredAthlete === athlete.id || isMe) && (
-                <g>
-                  <rect 
-                    x={pos.x - 15} 
-                    y={pos.y - 12} 
-                    width="30" 
-                    height="8" 
-                    rx="2" 
-                    fill="white" 
-                    filter="url(#shadow)"
-                  />
-                  <text 
-                    x={pos.x} 
-                    y={pos.y - 7} 
-                    textAnchor="middle" 
-                    className={`text-[4px] font-black uppercase ${isMe ? 'fill-red-600' : 'fill-blue-600'}`}
-                  >
-                    {athlete.name}
-                  </text>
-                </g>
-              )}
-            </g>
+        {/* Athlete markers */}
+        {athletes.map(a => {
+          const pos = positionOnRoute(a.virtual_km);
+          return (
+            <Marker
+              key={a.id}
+              position={pos}
+              icon={createIcon(a.is_me ? '#ef4444' : '#3b82f6', a.is_me ? 16 : 10)}
+            >
+              <Popup>
+                <div className="font-bold text-sm">{a.name}</div>
+                <div className="text-xs text-slate-500">{a.virtual_km.toFixed(1)} km virtuali</div>
+              </Popup>
+            </Marker>
           );
         })}
-      </svg>
-      
-      {/* Legend */}
-      <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end pointer-events-none">
-        <div className="bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-white/50 shadow-xl flex gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm" />
-            <span className="text-[12px] font-black uppercase text-slate-600">Tu</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
-            <span className="text-[12px] font-black uppercase text-slate-600">Squadra</span>
-          </div>
-        </div>
-      </div>
+      </MapContainer>
     </div>
   );
 }

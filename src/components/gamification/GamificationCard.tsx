@@ -1,196 +1,289 @@
 import { useState, useEffect } from 'react';
-import { Beer, ChevronRight, Map as MapIcon, Trophy, Info, X } from 'lucide-react';
+import { Beer, Trophy, Info, X, Star, Medal, Search, Navigation } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import VirtualMap from './VirtualMap';
-import GamificationLeaderboard from './GamificationLeaderboard';
 import GamificationInfo from './GamificationInfo';
 
 interface GamificationCardProps {
   userId?: string;
+  isCoach?: boolean;
 }
 
-export default function GamificationCard({ userId }: GamificationCardProps) {
+interface LeaderboardEntry {
+  rank: number;
+  athlete_id: string;
+  full_name: string;
+  virtual_km: number;
+  total_points: number;
+  is_me: boolean;
+  leg_points?: Record<number, number>;
+}
+
+export default function GamificationCard({ userId, isCoach = false }: GamificationCardProps) {
   const [loading, setLoading] = useState(true);
   const [currentLeg, setCurrentLeg] = useState<any>(null);
+  const [legs, setLegs] = useState<any[]>([]);
   const [virtualKm, setVirtualKm] = useState(0);
   const [rank, setRank] = useState<number | null>(null);
-  const [showFullView, setShowFullView] = useState(false);
-  const [fullViewTab, setFullViewTab] = useState<'map' | 'leaderboard' | 'info'>('map');
-  const [allAthletes, setAllAthletes] = useState<any[]>([]);
+  const [allAthletes, setAllAthletes] = useState<LeaderboardEntry[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [modalTab, setModalTab] = useState<'total' | 'info'>('total');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
-    if (!userId) return;
     setLoading(true);
     try {
-      // 1. Fetch current leg and settings
       const { data: settings } = await supabase.from('gamification_settings').select('current_leg_id').maybeSingle();
       const legId = settings?.current_leg_id || 1;
-
-      const { data: legs } = await supabase.from('gamification_legs').select('*').order('id');
-      if (legs) {
-        const current = legs.find(l => l.id === legId);
-        setCurrentLeg(current);
+      const { data: legData } = await supabase.from('gamification_legs').select('*').order('id');
+      if (legData) {
+        setLegs(legData);
+        setCurrentLeg(legData.find(l => l.id === legId) || legData[0]);
       }
 
-      // 2. Calculate my virtual KM
-      const { data: myKm } = await supabase.rpc('calculate_athlete_virtual_km', { p_athlete_id: userId });
-      setVirtualKm(myKm || 0);
+      if (userId && !isCoach) {
+        const { data: myKm } = await supabase.rpc('calculate_athlete_virtual_km', { p_athlete_id: userId });
+        setVirtualKm(myKm || 0);
+      }
 
-      // 3. Get rank (from a simple query or RPC if we had a non-filtered one)
-      // For the card, we'll just use the RPC but might need to fetch all if we want real rank
-      const { data: leaderboard } = await supabase.rpc('get_gamification_leaderboard', { p_athlete_id: userId });
+      const { data: leaderboard } = await supabase.rpc('get_gamification_leaderboard', { p_athlete_id: userId || null });
       if (leaderboard) {
-        const me = (leaderboard as any[]).find(e => e.is_me);
-        if (me) setRank(me.rank);
-        setAllAthletes(leaderboard);
+        // Enrich with leg points
+        const { data: allPoints } = await supabase.from('athlete_leg_points').select('athlete_id, leg_id, points');
+        const enriched = (leaderboard as any[]).map(entry => {
+          const lp: Record<number, number> = {};
+          (allPoints || []).forEach(p => { if (p.athlete_id === entry.athlete_id) lp[p.leg_id] = p.points; });
+          return { ...entry, leg_points: lp };
+        });
+        setAllAthletes(enriched);
+        if (!isCoach) {
+          const me = enriched.find(e => e.is_me);
+          if (me) setRank(me.rank);
+        }
       }
-
     } catch (err) {
-      console.error("Error fetching gamification data:", err);
+      console.error("Gamification fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [userId]);
+  useEffect(() => { fetchData(); }, [userId]);
+
+  const legProgress = currentLeg
+    ? Math.min(Math.max(((virtualKm - (currentLeg.cumulative_km - currentLeg.distance_km)) / currentLeg.distance_km) * 100, 0), 100)
+    : 0;
+
+  const currentLegIndex = currentLeg ? legs.findIndex(l => l.id === currentLeg.id) : 0;
+
+  // Top 5 leaderboard for inline display (current leg)
+  const inlineLeaderboard = allAthletes.slice(0, 5);
+  const filteredTotal = allAthletes.filter(e => e.full_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (loading && !currentLeg) return null;
 
-  const legProgress = currentLeg ? ((virtualKm - (currentLeg.cumulative_km - currentLeg.distance_km)) / currentLeg.distance_km) * 100 : 0;
-  const clampedProgress = Math.min(Math.max(legProgress, 0), 100);
-
   return (
     <>
-      <div className="bg-white rounded-[2rem] shadow-xl shadow-amber-900/5 border border-amber-100 overflow-hidden transition-all hover:shadow-2xl hover:shadow-amber-900/10 group">
-        <div className="p-6 md:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-amber-100 p-3 rounded-2xl group-hover:scale-110 transition-transform">
-                <Beer className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tight">Trofeo della Birra</h3>
-                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-0.5">Il tuo viaggio virtuale</p>
-              </div>
+      <div className="bg-white rounded-[2rem] shadow-xl shadow-amber-900/5 border border-amber-100 overflow-hidden">
+        {/* HEADER */}
+        <div className="p-6 md:p-8 border-b border-amber-50 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-amber-100 p-3 rounded-2xl">
+              <Beer className="w-6 h-6 text-amber-600" />
             </div>
-            {rank && (
-              <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg shadow-slate-200">
+            <div>
+              <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tight">Trofeo della Birra</h3>
+              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-0.5">
+                {isCoach ? 'Classifica Atleti' : 'Il tuo viaggio virtuale'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {rank && !isCoach && (
+              <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl flex items-center gap-2 shadow-lg">
                 <Trophy className="w-4 h-4 text-amber-400" />
                 <span className="text-sm font-black italic">#{rank}</span>
               </div>
             )}
+            <button
+              onClick={() => setShowModal(true)}
+              className="p-3 bg-slate-100 hover:bg-amber-100 rounded-2xl text-slate-500 hover:text-amber-600 transition-all"
+              title="Regolamento e Classifica Generale"
+            >
+              <Info className="w-5 h-5" />
+            </button>
           </div>
+        </div>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-end">
+        {/* TAPPA INFO */}
+        {!isCoach && currentLeg && (
+          <div className="px-6 md:px-8 pt-6">
+            <div className="flex justify-between items-end mb-3">
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tappa Attuale</p>
-                <p className="text-lg font-black text-slate-800">{currentLeg?.name || 'In rotta...'}</p>
+                <p className="text-base font-black text-slate-800">{currentLeg.name}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Km Totali</p>
-                <p className="text-lg font-black text-blue-600 italic">{virtualKm.toFixed(1)} <span className="text-xs uppercase ml-1">km</span></p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">I tuoi Km Virtuali</p>
+                <p className="text-base font-black text-blue-600 italic">{virtualKm.toFixed(1)} <span className="text-xs uppercase">km</span></p>
               </div>
             </div>
-
-            <div className="relative h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-              <div 
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-lg shadow-amber-200 transition-all duration-1000 ease-out"
-                style={{ width: `${clampedProgress}%` }}
-              >
-                <div className="absolute top-0 right-0 h-full w-8 bg-white/20 skew-x-[-20deg] animate-pulse" />
-              </div>
+            <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 mb-2">
+              <div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${legProgress}%` }}
+              />
             </div>
-
-            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-              <span>{currentLeg?.start_port}</span>
-              <span>{currentLeg?.end_port}</span>
+            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-6">
+              <span>{currentLeg.start_port}</span>
+              <span>{currentLeg.end_port}</span>
             </div>
           </div>
+        )}
 
-          <button 
-            onClick={() => { setShowFullView(true); setFullViewTab('map'); }}
-            className="mt-8 w-full flex items-center justify-center gap-3 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-[0.98] shadow-xl shadow-slate-200"
-          >
-            Esplora Mappa e Classifica <ChevronRight className="w-5 h-5" />
-          </button>
+        {/* MAP - INLINE */}
+        <div className="px-6 md:px-8 pb-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mappa del Percorso</p>
+          <VirtualMap
+            currentLegIndex={currentLegIndex}
+            athletes={allAthletes.map(a => ({
+              id: a.athlete_id,
+              name: a.full_name,
+              virtual_km: a.virtual_km,
+              is_me: a.is_me,
+            }))}
+          />
+        </div>
+
+        {/* CLASSIFICA TAPPA CORRENTE - INLINE TOP 5 */}
+        <div className="border-t border-slate-100 px-6 md:px-8 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Navigation className="w-3.5 h-3.5" /> Tappa Corrente — Top 5
+            </p>
+            <button
+              onClick={() => { setShowModal(true); setModalTab('total'); }}
+              className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+            >
+              Vedi Classifica Generale →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {inlineLeaderboard.map(entry => (
+              <div
+                key={entry.athlete_id}
+                className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${entry.is_me ? 'bg-blue-600 text-white' : 'bg-slate-50'}`}
+              >
+                <span className={`text-sm font-black italic w-8 shrink-0 ${entry.is_me ? 'text-white' : 'text-slate-400'}`}>
+                  #{entry.rank}
+                </span>
+                <span className={`flex-1 font-black text-sm truncate ${entry.is_me ? 'text-white' : 'text-slate-800'}`}>
+                  {entry.full_name}
+                </span>
+                <span className={`text-xs font-black italic shrink-0 ${entry.is_me ? 'text-blue-100' : 'text-blue-600'}`}>
+                  {entry.virtual_km.toFixed(1)} km
+                </span>
+              </div>
+            ))}
+            {inlineLeaderboard.length === 0 && (
+              <div className="text-center py-8 text-slate-300 text-xs font-black uppercase tracking-widest">Nessun dato disponibile</div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* FULL VIEW MODAL */}
-      {showFullView && (
-        <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col animate-in slide-in-from-bottom-8 duration-300">
-          <header className="bg-white p-4 md:p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 z-10">
-            <div className="flex items-center gap-4">
-              <div className="bg-amber-100 p-2 rounded-xl">
-                <Beer className="w-6 h-6 text-amber-600" />
+      {/* MODAL: Classifica Generale + Regolamento */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full md:max-w-3xl md:rounded-[2.5rem] rounded-t-[2.5rem] max-h-[92vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-100 p-2 rounded-xl"><Beer className="w-5 h-5 text-amber-600" /></div>
+                <h2 className="text-lg font-black text-slate-900 italic uppercase">Trofeo della Birra</h2>
               </div>
-              <h2 className="text-lg font-black text-slate-900 italic uppercase">Trofeo della Birra</h2>
-            </div>
-            <button 
-              onClick={() => setShowFullView(false)}
-              className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-2xl transition-all"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </header>
-
-          <nav className="bg-white border-b border-slate-200 px-4 flex gap-6 overflow-x-auto no-scrollbar">
-            {[
-              { id: 'map', label: 'Mappa', icon: MapIcon },
-              { id: 'leaderboard', label: 'Classifica', icon: Trophy },
-              { id: 'info', label: 'Regolamento', icon: Info },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFullViewTab(tab.id as any)}
-                className={`py-4 px-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest border-b-4 transition-all whitespace-nowrap ${
-                  fullViewTab === tab.id 
-                    ? 'border-blue-600 text-blue-600' 
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" /> {tab.label}
+              <button onClick={() => setShowModal(false)} className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-all">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
-            ))}
-          </nav>
+            </div>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
-            <div className="max-w-4xl mx-auto h-full">
-              {fullViewTab === 'map' && (
-                <div className="animate-in fade-in zoom-in-95 duration-300 h-full flex flex-col gap-6">
-                  <VirtualMap 
-                    currentLegIndex={(currentLeg?.id || 1) - 1} 
-                    athletes={allAthletes.map(a => ({
-                      id: a.athlete_id,
-                      name: a.full_name,
-                      virtual_km: a.virtual_km,
-                      is_me: a.is_me
-                    }))}
-                  />
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                    <h4 className="font-black text-slate-900 uppercase mb-2">Tappa: {currentLeg?.name}</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      Siamo sulla rotta da <span className="font-bold">{currentLeg?.start_port}</span> a <span className="font-bold">{currentLeg?.end_port}</span>. 
-                      Hai percorso <span className="text-blue-600 font-bold">{virtualKm.toFixed(1)} km</span> virtuali su un totale di {currentLeg?.cumulative_km} km necessari per questa tappa.
-                    </p>
+            <div className="flex bg-slate-100/50 p-1.5 mx-6 mt-4 rounded-2xl gap-1">
+              <button
+                onClick={() => setModalTab('total')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === 'total' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
+              >
+                <Star className="w-3.5 h-3.5" /> Classifica Generale
+              </button>
+              <button
+                onClick={() => setModalTab('info')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${modalTab === 'info' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
+              >
+                <Info className="w-3.5 h-3.5" /> Regolamento
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mt-4">
+              {modalTab === 'total' && (
+                <div className="px-6 pb-8">
+                  {/* Search */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cerca atleta..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 font-bold text-sm transition-all"
+                    />
+                  </div>
+                  {/* Compact table: Name | T1..T5 | Tot */}
+                  <div className="overflow-x-auto rounded-3xl border border-slate-100">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-black text-slate-400 uppercase tracking-wider">#</th>
+                          <th className="text-left px-3 py-3 font-black text-slate-400 uppercase tracking-wider">Atleta</th>
+                          {legs.map(leg => (
+                            <th key={leg.id} className="text-center px-2 py-3 font-black text-slate-400 uppercase">
+                              T{leg.id}
+                            </th>
+                          ))}
+                          <th className="text-right px-4 py-3 font-black text-blue-600 uppercase tracking-wider">Tot</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredTotal.map(entry => (
+                          <tr
+                            key={entry.athlete_id}
+                            className={`transition-all ${entry.is_me ? 'bg-blue-600' : 'hover:bg-slate-50'}`}
+                          >
+                            <td className={`px-4 py-3 font-black italic ${entry.is_me ? 'text-white' : 'text-slate-400'}`}>
+                              {entry.rank <= 3 ? (
+                                <Medal className={`w-4 h-4 inline ${entry.rank === 1 ? 'text-amber-400' : entry.rank === 2 ? 'text-slate-300' : 'text-amber-700'}`} />
+                              ) : `#${entry.rank}`}
+                            </td>
+                            <td className={`px-3 py-3 font-bold truncate max-w-[90px] ${entry.is_me ? 'text-white' : 'text-slate-800'}`}>
+                              {entry.full_name}
+                            </td>
+                            {legs.map(leg => (
+                              <td key={leg.id} className={`px-2 py-3 text-center font-bold ${entry.is_me ? 'text-blue-100' : 'text-slate-400'}`}>
+                                {entry.leg_points?.[leg.id] !== undefined ? `${entry.leg_points[leg.id]}` : '—'}
+                              </td>
+                            ))}
+                            <td className="px-4 py-3 text-right">
+                              <span className={`font-black italic px-2 py-1 rounded-lg text-xs ${entry.is_me ? 'bg-white text-blue-600' : 'bg-slate-900 text-white'}`}>
+                                {entry.total_points}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
-              {fullViewTab === 'leaderboard' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300 h-full">
-                  <GamificationLeaderboard userId={userId} />
-                </div>
-              )}
-              {fullViewTab === 'info' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <GamificationInfo />
-                </div>
-              )}
+              {modalTab === 'info' && <GamificationInfo />}
             </div>
-          </main>
+          </div>
         </div>
       )}
     </>

@@ -462,6 +462,8 @@ export default function Dashboard({ setCurrentView, userRole = 'coach', userId }
               </div>
             </div>
           </div>
+          {/* GAMIFICATION - COACH VIEW */}
+          <GamificationCard isCoach={true} />
         </>
       )}
 
