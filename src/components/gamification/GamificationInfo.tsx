@@ -72,12 +72,13 @@ export default function GamificationInfo() {
             <ul className="space-y-4 text-sm leading-relaxed">
               <li className="flex gap-4">
                 <span className="text-white font-bold shrink-0">KM Totali:</span>
-                I chilometri dichiarati durante ogni allenamento in cui sei presente.
+                <span className="flex-1 min-w-0">I chilometri dichiarati durante ogni allenamento in cui sei presente.</span>
               </li>
               <li className="flex gap-4">
                 <span className="text-white font-bold shrink-0">% Presenze:</span>
-                Calcolata su base <span className="text-blue-400 font-bold">6 allenamenti a settimana</span>. Più sei costante, più i tuoi KM reali diventano KM virtuali validi per il trofeo.
+                <span className="flex-1 min-w-0">Calcolata su base <span className="text-blue-400 font-bold">6 allenamenti a settimana</span>. Più sei costante, più i tuoi KM reali diventano KM virtuali validi per il trofeo.</span>
               </li>
+
             </ul>
           </div>
 
