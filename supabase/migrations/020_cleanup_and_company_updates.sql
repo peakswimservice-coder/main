@@ -5,8 +5,16 @@ SET account_manager_email = 'laifesmart@gmail.com'
 WHERE account_manager_email = 'fnicora@gmail.com';
 
 -- 2. Elimina eventuali log di allenamenti per il coach che stiamo per rimuovere per evitare violazioni di FK
+-- Poiché training_sessions è collegata a groups, e groups a auth.users, seguiamo la catena
 DELETE FROM training_sessions
-WHERE coach_id IN (SELECT id FROM coaches WHERE email = 'laifesmart@gmail.com');
+WHERE group_id IN (
+  SELECT id FROM groups 
+  WHERE coach_id IN (SELECT id FROM auth.users WHERE email = 'laifesmart@gmail.com')
+);
+
+-- 2b. Elimina i gruppi creati dal coach
+DELETE FROM groups 
+WHERE coach_id IN (SELECT id FROM auth.users WHERE email = 'laifesmart@gmail.com');
 
 -- 3. Elimina le gare (races) associate al coach che stiamo per rimuovere (il DB schema ha settato ON DELETE CASCADE, ma lo facciamo in modo esplicito per sicurezza)
 DELETE FROM races
@@ -55,5 +63,24 @@ BEGIN
     ADD CONSTRAINT athletes_coach_id_fkey
     FOREIGN KEY (coach_id) REFERENCES coaches(id)
     ON DELETE CASCADE;
+
+    -- ==========================================
+    -- 7. Modifica FK constraint su training_sessions per DELETE CASCADE
+    -- ==========================================
+    SELECT tc.constraint_name INTO fk_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+    WHERE tc.table_name = 'training_sessions' AND kcu.column_name = 'group_id' AND tc.constraint_type = 'FOREIGN KEY';
+
+    IF fk_name IS NOT NULL THEN
+      EXECUTE 'ALTER TABLE training_sessions DROP CONSTRAINT ' || fk_name;
+    END IF;
+
+    ALTER TABLE training_sessions
+    ADD CONSTRAINT training_sessions_group_id_fkey
+    FOREIGN KEY (group_id) REFERENCES groups(id)
+    ON DELETE CASCADE;
+
   END;
 END $$;
